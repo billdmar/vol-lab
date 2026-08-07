@@ -124,7 +124,8 @@ implied variance (`src/surface/svi.py`):
 `a` level, `b ≥ 0` wing angle, `ρ∈(−1,1)` skew, `m` horizontal shift, `σ` curvature at the
 minimum. No-arb discipline in the calibration bounds/constraints:
 - **`w(k) ≥ 0` globally** via `a + b·σ·√(1−ρ²) ≥ 0` (the analytic global minimum).
-- **Lee wing bound**: `b·(1+|ρ|)·τ ≤ 4` caps the asymptotic wing slope at 2 per side.
+- **Lee wing bound**: `b·(1+|ρ|) ≤ 2` caps the asymptotic wing slope of total variance at
+  2 per side (τ-independent — raw SVI's `w` is already σ²·τ).
 - **Butterfly** is checked *after* the fit with Durrleman's `g(k) ≥ 0` (Q10), never
   smoothed away.
 - **Calendar** monotonicity (`w` non-decreasing in τ) checked across expiries (Q10).
