@@ -111,13 +111,55 @@ on the fit; the liquid core (real mids, `|k| ≲ 0.7`) fits cleanly. This is a
 honest read is that far-wing mark IV is unreliable, which is itself a finding the
 exchange-differential (`src/exchdiff`) quantifies.
 
-## Liquidity filtering
-Illiquid strikes are filtered by minimum open interest and maximum relative
-bid-ask spread before calibration. Filtering is **never silent**: the count kept
-vs dropped and the thresholds are reported alongside every surface.
+## No-arbitrage scan (`src/noarb`)
+Three static-arbitrage checks, run on the calibrated surface (and price-convexity on a
+reconstructed call curve), all **quantified, never smoothed**:
+- **Butterfly (slice):** Gatheral's Durrleman `g(k)` from *analytic* raw-SVI derivatives
+  `w'`, `w''`; flags `g(k) < TOL["svi_butterfly_g_min"]` (−1e−8) over a dense ±1.5 k-grid,
+  reporting the min `g` and its `k`.
+- **Butterfly (price):** convexity of the undiscounted call curve in strike across
+  adjacent triplets (right-slope − left-slope ≥ 0).
+- **Calendar:** total variance non-decreasing in `tau` at fixed `k`, sampled on the
+  *overlap* of adjacent calibrated k-ranges (no extrapolation).
 
-TODO(G2): fix the min-OI / max-spread thresholds with rationale, and define the
-per-expiry filter-stats block emitted with each calibration.
+**Result (fixture 2026-08-07).** Calendar arbitrage: **zero** on the snapshot, both
+coins. Price-convexity violations are tiny (≤ 0.12 USD/strike), consistent with
+bid-ask/discreteness noise. The one SVI `g<0` flag per surface sits at `k ≈ 0.5–0.8`
+— **outside the liquid strike range** (`|k| ≲ 0.2`) on a short-tau slice, i.e. a
+wing-*extrapolation* artifact of near-expiry SVI, not traded-region arbitrage. The scan
+grid deliberately spans past the wings so this extrapolation risk is surfaced, not hidden.
+
+## Exchange differential (`src/exchdiff`)
+The external verifier the mission is built around: our independently-written IV solver's
+vols vs Deribit's **published mark IV**. For each option with both a valid mark IV and a
+usable mid, `Δσ = our_iv − mark_iv` (vol points). Distribution summarized by median, IQR,
+mean, std, and median-absolute — overall and bucketed by moneyness (ATM/near/wing) and
+expiry (short/medium/long). Descriptive only (`TOL["exch_diff_report_only"]`): we never
+claim "agreement" without printing the distribution. Outliers are ranked with a diagnosed
+cause (`mark-fallback` > `wide-spread` > `deep-OTM wing` > `mark-IV construction`).
+
+**Result (fixture 2026-08-07).** Median `|Δσ|` = **0.11–0.45 vol points** overall
+(BTC tighter than ETH; snapshot-2 BTC 0.11). Residuals grow toward ATM/near-dated
+(BTC ATM ≈ 0.22–0.89 vp) exactly where mark-IV timing/smoothing bites hardest, and are
+smallest in the liquid wings — the honest, expected pattern. Largest outliers are
+next-day ATM strikes (mark timing) and wide-spread far-wing calls (vega collapse). This
+is strong evidence our solver is correct *and* a descriptive read on how Deribit builds
+its mark IV — not a tuned match.
+
+## Liquidity filtering
+Two liquidity mechanisms, both non-silent:
+1. **Hard filters** (`src/deribit/filters.py`): optional minimum open interest and
+   maximum relative bid-ask spread, defaulting to no-op so callers opt in. Every
+   dropped quote is recorded in `FilterStats` with a first-failing reason
+   (`low_open_interest` > `no_rel_spread` > `wide_spread`), and `FilterStats.check()`
+   asserts `n_in == n_out + n_dropped` so nothing vanishes unaccounted.
+2. **Soft weighting** (used in the surface): rather than hard-cutting the wings, the
+   forward regression and SVI fit *weight* each point — inverse relative spread for
+   forwards, and `1.0` for real two-sided mids vs `0.3` for exchange-mark fallbacks in
+   SVI. This keeps illiquid far strikes visible (so the no-arb scan and exchange
+   differential can report on them) without letting them dominate the fit. Rationale:
+   silently dropping the wings would hide exactly the stale-mark artifacts the project
+   is meant to surface (see the 25Sep26 outlier above).
 
 ## Tolerance registry
 All differential-test tolerances live in `config/tolerances.py` (`TOL` dict),

@@ -94,8 +94,10 @@ continue the mission without being asked.
 - [x] G1 engines merged and cross-verified: BS, binomial, MC, Greeks,
       property suites — convergence orders measured (CRR->BS order 0.9993;
       MC CI coverage 6/6; Greeks 3-way rel <0.5%; parity 4.3e-14; cov 98%)
-- [ ] G2 surfaces: parity-inferred forwards, per-expiry smiles, SVI
+- [x] G2 surfaces: parity-inferred forwards, per-expiry smiles, SVI
       calibration, no-arb scan, exchange differential vs mark IV
+      (F match Deribit <0.5%; median|Δσ| 0.11-0.45 vol pts; 0 calendar arb;
+      LSMC vs CRR 0.43%; 190 tests, cov 96%)
 - [ ] G3 research note written from N snapshot days; all figures generated;
       LSMC American pricing verified
 - [ ] G4 recruiter-grade README + INTERVIEW_NOTES + RESUME_BULLETS — complete

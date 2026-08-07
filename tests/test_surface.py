@@ -162,6 +162,38 @@ def test_build_surface_real_fixture_btc_and_eth():
         assert all(math.isfinite(v) for _, v in ts)
 
 
+def test_build_surface_empty_and_min_points_guards():
+    """Fail-loud on no quotes; skip expiries with too few smile points (honest-unknown)."""
+    with pytest.raises(ValueError, match="no quotes"):
+        build_surface([], ref_ts=0.0)
+
+    snap = load_snapshot(FIXTURE)
+    quotes = snap.for_underlying("BTC")
+    # An unreachable min forces every expiry to be skipped -> zero slices, no crash.
+    surf = build_surface(quotes, ref_ts=snap.collected_ts, min_smile_points=10_000)
+    assert surf.slices == ()
+
+
+def test_forward_negative_df_returns_none():
+    """A book whose C-P slopes upward in K (nonsensical) yields no forward, not a fake one."""
+    # Construct pairs where C - P increases with K (positive slope -> df<0).
+    from src.schema import OptionQuote as OQ
+    ref_ts = 0.0
+    quotes = []
+    for i, k in enumerate([100.0, 110.0, 120.0, 130.0]):
+        cu, pu = 1.0 + i, 0.0  # C-P = 1+i rises with K -> slope>0 -> df<0
+        for ot, coin in (("C", cu / 100.0), ("P", pu / 100.0)):
+            quotes.append(OQ(
+                instrument_name=f"BTC-X-{int(k)}-{ot}", underlying="BTC", option_type=ot,
+                strike=k, expiry_ts=1_750_000_000.0, bid_coin=None, ask_coin=None,
+                mark_price_coin=max(coin, 1e-9), mark_price_usd=max(coin, 1e-9) * 100.0,
+                mark_iv=0.5, open_interest=1.0, index_price=100.0, underlying_price=100.0,
+                snapshot_ts=ref_ts,
+            ))
+    fit = infer_forward(quotes, ref_ts=ref_ts - 0.25 * 365 * 86400)
+    assert fit is None
+
+
 def test_surface_term_structure_and_rr_finite():
     snap = load_snapshot(FIXTURE)
     surf = build_surface(snap.for_underlying("BTC"), ref_ts=snap.collected_ts)
