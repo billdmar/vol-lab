@@ -14,14 +14,17 @@ with parameters (a, b, rho, m, sigma):
 
 No-arbitrage discipline (documented in DESIGN.md):
   * Domain constraints keep the slice from generating negative variance and cap the wing
-    slopes by the Lee moment bound:  b*(1+|rho|) <= 4/(1+|rho|) is enforced via the
-    upper bound  b*(1+|rho|)*tau <= 4  (calendar-scaled). a + b*sigma*sqrt(1-rho^2) >= 0
-    keeps w(k) >= 0 everywhere.
+    slopes by the Lee moment bound. Because raw SVI parameterizes TOTAL variance
+    w = sigma^2 * tau, the asymptotic slope of w in |k| is b*(1+|rho|), and the Lee/Gatheral
+    left-and-right-wing no-arbitrage condition is the tau-INDEPENDENT  b*(1+|rho|) <= 2
+    (each wing slope <= 2). a + b*sigma*sqrt(1-rho^2) >= 0 keeps w(k) >= 0 everywhere.
   * Butterfly (static) arbitrage is checked AFTER the fit via Gatheral's g(k) function
-    (see src/noarb); a slice with g(k) < 0 is flagged, never silently smoothed.
+    (see src/noarb), which is the authoritative no-arb gate; a slice with g(k) < 0 is
+    flagged, never silently smoothed. The b*(1+|rho|) <= 2 domain bound is a necessary
+    pre-condition that keeps the calibration away from arbitrageable wings a priori.
 
 Fit: least squares on total variance in k-space (weighted by liquidity), with a small
-multi-start over m/sigma to avoid the well-known local minima. Deterministic (fixed
+multi-start over rho/sigma to avoid the well-known local minima. Deterministic (fixed
 starts, no RNG). Reports RMSE in total-variance and in vol-point space.
 """
 
@@ -125,7 +128,7 @@ def calibrate_svi(
     k_lo, k_hi = float(np.min(k)), float(np.max(k))
     bounds = [
         (-0.5, max(1.0, 2 * float(np.max(w)))),    # a
-        (0.0, 4.0 / max(tau, 1e-6)),                # b (Lee-bound-scaled ceiling)
+        (0.0, 2.0),                                 # b (Lee-bound ceiling: b*(1+|rho|)<=2 => b<=2)
         (-0.999, 0.999),                            # rho
         (k_lo - 1.0, k_hi + 1.0),                   # m
         (1e-4, 5.0),                                # sigma
@@ -137,9 +140,12 @@ def calibrate_svi(
         return a + b * sigma * np.sqrt(max(1.0 - rho * rho, 0.0))
 
     def constraint_lee(theta: np.ndarray) -> float:
-        # Wing slopes bounded: b*(1+|rho|)*tau <= 4 (no-arb asymptotic slope <= 2 each side).
+        # Lee wing bound on TOTAL variance (tau-independent): b*(1+|rho|) <= 2, so each
+        # asymptotic wing slope of w(k) stays <= 2. This is the correct no-arb slope bound
+        # for raw SVI (w is already sigma^2*tau); the post-fit Durrleman g(k) scan is the
+        # authoritative butterfly gate.
         _a, b, rho, _m, _sigma = theta
-        return 4.0 - b * (1.0 + abs(rho)) * tau
+        return 2.0 - b * (1.0 + abs(rho))
 
     cons = [
         {"type": "ineq", "fun": constraint_wpos},
