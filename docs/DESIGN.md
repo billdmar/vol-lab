@@ -61,8 +61,9 @@ fabricated forward.
 
 **External validation (fixture 2026-08-07, 1540 quotes).** The parity-inferred
 forward matches Deribit's own published per-expiry `underlying_price` to within
-**0.01–0.5%** across all 12 BTC and 12 ETH expiries (e.g. BTC 25Jun27:
-F_parity 67,348 vs Deribit 67,311, +0.05%). This is a genuine external check on
+**~0.7%** across all 12 BTC and 12 ETH expiries — most under 0.3% (e.g. BTC 25Jun27:
+F_parity 67,348 vs Deribit 67,311, +0.05%); the sole outlier is one thin far-dated ETH
+line (25Jun27) at +0.69%. This is a genuine external check on
 the estimator, not a self-consistency loop. The implied `df ≈ 1` at short tenors
 confirms the `r ≈ 0` USD-forward working assumption; the small positive forward
 premium at long tenors is the crypto funding/carry, left in `df` rather than

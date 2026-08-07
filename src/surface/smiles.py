@@ -77,10 +77,11 @@ def build_smile(
 ) -> Smile:
     """Build one expiry's smile from its quotes and the parity-inferred forward.
 
-    `otm_only` keeps the liquid out-of-the-money wing of each side (calls for K>=F, puts
-    for K<F) — the standard smile construction, avoiding the illiquid deep-ITM options and
-    the double-counting of ITM/OTM at the same strike. ITM points are still solvable but
-    are down-weighted in calibration; here we simply select the OTM side by default.
+    `otm_only` (the default) keeps the liquid out-of-the-money wing of each side (calls for
+    K>=F, puts for K<F) — the standard smile construction, avoiding the illiquid deep-ITM
+    options and the double-counting of ITM/OTM at the same strike. With `otm_only=True` the
+    ITM points are skipped entirely; pass `otm_only=False` to retain both sides at every
+    strike (both are individually solvable).
     """
     F = fit.forward
     tau = fit.tau

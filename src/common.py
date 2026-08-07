@@ -1,8 +1,10 @@
 """Shared numerical helpers used by more than one engine.
 
-Small, dependency-light utilities that the lattice, Monte-Carlo, and LSMC engines all
-need. Kept in one place so the definitions can't drift apart (they were previously
-duplicated per engine while the ownership map was in force during the build).
+Small, dependency-light utilities used across the pricing engines: `intrinsic` by the
+lattice and LSMC engines, `mean_stderr` by the Monte-Carlo and LSMC engines, and the
+`DEFAULT_SEED` by both stochastic engines. Kept in one place so the definitions can't
+drift apart (they were previously duplicated per engine while the ownership map was in
+force during the build).
 """
 
 from __future__ import annotations

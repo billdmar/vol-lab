@@ -27,13 +27,16 @@ constraints and a strictly descriptive BTC/ETH volatility research note.
 | MC variance-reduction speedup | **8.5×** (control variate), 6.4× (combined), 1.3× (antithetic)¹ |
 | Greeks 3-way reconciliation | closed-form vs FD `<1e-4`; vs MC pathwise/LR `<0.5%` |
 | Put-call parity (model) | **~2e-14** (machine precision, gate 1e-10) |
-| **Exchange differential** vs Deribit mark IV | median \|Δσ\| = **0.18 vol pts (BTC)** / 0.39 (ETH) |
+| **Exchange differential** vs Deribit mark IV | median \|Δσ\| = **0.18 vol pts (BTC)** / 0.39 (ETH)² |
 | No-arbitrage scan | 0 calendar violations; butterfly clean in the liquid region |
-| Test coverage (engines) | **96%** (every module ≥ 91%), 192 tests, green CI |
+| Test coverage (engines) | **96%** (every module ≥ 91%), 198 tests, green CI |
 
 *¹ Variance-reduction speedup is measured as the equal-precision path-count multiplier at
 S=K=100, τ=0.75, r=3%, σ=65%, q=1%, 100k paths, seed 12345 (it is parameter-dependent;
 `variance_reduction_report(...)`). Control-alone beats the combo here — reported honestly.*
+
+*² The 0.18/0.39 exchange headline is the mean of the two snapshots' per-snapshot median
+|Δσ| (BTC 0.11 & 0.25, ETH 0.32 & 0.45); `report_surface.py` prints the per-snapshot values.*
 
 *Snapshot window: 2 intraday snapshots on 2026-08-07 (the resumable collector accumulates
 more days over time). Reproduce every number: `python scripts/report_surface.py --all-snapshots`.*
@@ -85,7 +88,7 @@ feed the IV solver; every stage's conventions and tolerances are in
 ## What the research note found (descriptive only)
 
 Contango term structure for both coins (BTC 26→42%, ETH 34→56% ATM vol); BTC carries a
-uniform downside skew that steepens to −4.6 vol pts by 6 months; **ETH's skew flips** —
+uniform downside skew that steepens to −4.6 vol pts by ~4.5 months; **ETH's skew flips** —
 front-end upside (call) skew turning downside by ~11 Aug. Full study with confidence
 intervals and honest window caveats: [`docs/RESEARCH_NOTE.md`](docs/RESEARCH_NOTE.md).
 
@@ -95,7 +98,7 @@ intervals and honest window caveats: [`docs/RESEARCH_NOTE.md`](docs/RESEARCH_NOT
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"                       # pinned runtime + dev tooling (see pyproject.toml)
 
-make verify                                   # ruff + mypy + 192 tests + coverage gate + report + figures
+make verify                                   # ruff + mypy + 198 tests + coverage gate + report + figures
 # or run the pieces directly:
 ruff check . && mypy && coverage run -m pytest && coverage report
 python scripts/report_surface.py --all-snapshots   # reproduce every statistic
@@ -108,7 +111,8 @@ python scripts/collect_snapshot.py                 # collect a fresh snapshot (p
 - **Inverse contracts handled explicitly** — Deribit premiums are quoted in coin; USD =
   coin × index, both retained and documented (`src/deribit`, `docs/DESIGN.md`).
 - **Forwards inferred, not assumed** — from put-call parity (`C−P` vs `K` regression);
-  the inferred forward matches Deribit's own to `<0.5%`.
+  the inferred forward matches Deribit's own to within ~0.7% (most under 0.3%; the sole
+  outlier is one thin far-dated ETH line, 25Jun27 at +0.69%).
 - **Robust IV solver** — bracket + Newton with a vega floor and a Brent fallback; returns
   `None` on sub-intrinsic / vega-collapse inputs rather than a plausible-but-wrong vol.
 - **SVI under no-arbitrage** — raw-SVI with a positive-variance global-min constraint and

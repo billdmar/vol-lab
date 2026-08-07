@@ -37,7 +37,7 @@ holds to machine precision (see Q4/Q9). The point I make in interview: the forwa
 
 Three independent engines agree in the G1 gate (`tests/test_integration_g1.py`):
 closed-form Black-Scholes (`src/bs`) vs **central finite differences** vs **Monte Carlo**
-(`src/mc`). Measured at ATM, τ=1, σ=0.6, r=q=0: FD-vs-closed relative error is ~1e-9
+(`src/mc`). Measured at ATM, τ=0.75, σ=0.65, r=q=0: FD-vs-closed relative error is ~1e-9
 (well under the 1e-4 gate); MC **pathwise** delta = 0.13% and vega = 0.24%; MC
 **likelihood-ratio** gamma = 0.45%. Pathwise differentiates the payoff through
 `dS_T/dS = S_T/S` (low variance, but only legal because the vanilla payoff is a.s.
@@ -57,10 +57,10 @@ Observed (from `report_surface.py`):
   runs from about −0.7 to −1.8 vol pts at the front to −4.0 to −4.6 vol pts at 2–5
   months — downside puts bid richer than upside calls, more so further out.
 - **ETH** is the more interesting story: the skew **flips sign inside the first week**.
-  The 0–3-day expiries show a *positive* `RR25` (+1.9, +2.6, +0.2 — call/upside skew),
-  it crosses zero around the 11-Aug expiry (−1.3), and every tenor beyond is downside
-  (−1.7 to −2.9). I read the front-end call skew descriptively as short-dated upside
-  demand, not as a signal.
+  The 0–2-day expiries show a *positive* `RR25` (+1.9, +2.6 — call/upside skew), it
+  crosses through zero at the 10-Aug expiry (≈−0.06) into downside by 11-Aug (−1.5), and
+  every tenor beyond is downside (to about −2.9). I read the front-end call skew
+  descriptively as short-dated upside demand, not as a signal.
 
 ## 4. What is implied vol? How does your solver work, and how can it fail?
 
@@ -129,7 +129,7 @@ minimum. No-arb discipline in the calibration bounds/constraints:
   smoothed away.
 - **Calendar** monotonicity (`w` non-decreasing in τ) checked across expiries (Q10).
 
-Fit is deterministic (fixed multi-start over m/σ, no RNG); RMSE is reported in both
+Fit is deterministic (fixed multi-start over ρ/σ, no RNG); RMSE is reported in both
 total-variance and vol-point space (e.g. `rmse_w` ~5e-5 to 8e-3 across slices).
 
 ## 8. Inverse contracts: how are Deribit crypto options quoted, and how did you convert?
@@ -163,7 +163,7 @@ forward from one strike.
 
 Findings across both snapshots: **0 calendar violations** (both currencies) — the term
 structure of variance is monotone. Each surface shows exactly **one SVI slice with a
-`g_min < 0`**, and its location (`k ≈ 0.04–0.5`, a short-dated expiry's wing) marks it as a
+`g_min < 0`**, and its location (`k ≈ 0.45–0.80`, a short-dated expiry's wing) marks it as a
 **wing-extrapolation artifact** — the fit is convex through the traded strikes and only dips
 negative out where the calibration grid runs past the data. A handful of raw price-convexity
 "violations" appear (27–47, worst ≈0.01–0.12 USD), consistent with bid/ask granularity, not
