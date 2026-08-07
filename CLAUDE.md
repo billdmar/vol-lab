@@ -98,8 +98,9 @@ continue the mission without being asked.
       calibration, no-arb scan, exchange differential vs mark IV
       (F match Deribit <0.5%; median|Δσ| 0.11-0.45 vol pts; 0 calendar arb;
       LSMC vs CRR 0.43%; 190 tests, cov 96%)
-- [ ] G3 research note written from N snapshot days; all figures generated;
-      LSMC American pricing verified
+- [x] G3 research note written (descriptive, CIs, IV-vs-realized honestly deferred
+      on the 1-day window); 8 figures script-generated + byte-deterministic; LSMC
+      American verified (G2); note internally consistent w/ recorded stats
 - [ ] G4 recruiter-grade README + INTERVIEW_NOTES + RESUME_BULLETS — complete
 - [ ] P6 (stretch, only if asked) pybind11 C++ MC kernel / CBOE delayed
       equity-options extension

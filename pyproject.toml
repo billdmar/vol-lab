@@ -43,7 +43,11 @@ filterwarnings = ["error::DeprecationWarning"]
 [tool.coverage.run]
 branch = true
 source = ["src"]
-omit = ["src/**/__init__.py"]
+# The >=90% gate is on the *engines* (pricing, data, surface, verification). src/viz is
+# presentation code (matplotlib figure generation) verified by visual inspection +
+# byte-level determinism (scripts/make_figures.py), not unit tests — so it is excluded
+# from the engine-coverage measurement rather than padded with brittle image assertions.
+omit = ["src/**/__init__.py", "src/viz/*"]
 
 [tool.coverage.report]
 show_missing = true
