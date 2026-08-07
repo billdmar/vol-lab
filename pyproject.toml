@@ -1,0 +1,50 @@
+[project]
+name = "vol-lab"
+version = "0.1.0"
+description = "Options pricing and implied-volatility surface engine on real Deribit crypto-options data, cross-verified against the exchange."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "William Mar" }]
+
+# Pinned to the exact versions resolved in the project venv (Python 3.12.13, arm64).
+# CI (ubuntu-latest) installs these same pins; see .github/workflows/ci.yml.
+dependencies = [
+  "numpy==2.5.1",
+  "scipy==1.18.0",
+  "pandas==3.0.5",
+  "matplotlib==3.11.1",
+  "hypothesis==6.165.2",
+  "pytest==9.1.1",
+  "coverage==7.15.4",
+  "ruff==0.16.1",
+  "requests==2.34.2",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "data"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, comprehensions, pyupgrade, numpy-specific
+select = ["E", "F", "I", "B", "C4", "UP", "NPY"]
+ignore = [
+  "E741",  # ambiguous variable names (d1/d2, k, K are domain-standard in options math)
+]
+
+[tool.pytest.ini_options]
+# src-layout: import engines as `from src.bs import ...`
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error::DeprecationWarning"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = ["src/**/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
