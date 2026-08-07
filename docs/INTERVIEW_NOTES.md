@@ -1,6 +1,6 @@
 # vol-lab — Options Market-Maker Interview Notes
 
-Fifteen screen-standard questions (Akuna / SIG / Optiver / IMC / CTC), each answered
+Eighteen screen-standard questions (Akuna / SIG / Optiver / IMC / CTC), each answered
 **from this codebase** with the file that implements it and the number it produced.
 Every figure below was regenerated from the committed fixtures
 (`data/snapshots/snapshot_20260807_*.json`, BTC + ETH, 1540 quotes each) via
@@ -232,6 +232,55 @@ The framing I lead with: **"pricing has right answers, so I built where I can be
 wrong."** Cross-engine differentials, measured convergence order, parity to machine
 precision, and an honest-unknown IV solver are all *falsifiable* — that's the point of the
 project, and it's why every number above regenerates from one command.
+
+## 16. Sticky-strike vs sticky-delta — and which does your surface assume?
+
+Two conventions for how the smile moves when spot moves. **Sticky-strike:** the IV at a
+fixed *strike* stays put as spot moves (so a given option's vol is constant, and ATM vol
+rises as spot falls into the skew). **Sticky-delta (sticky-moneyness):** the IV at a fixed
+*delta* / log-moneyness stays put, so the whole smile translates with spot and the ATM vol
+is (to first order) unchanged. My surface is parameterized in **log-moneyness `k = ln(K/F)`**
+(`src/surface/svi.py`), i.e. a sticky-delta-style representation: each snapshot's smile is a
+function of moneyness, not absolute strike. That's the natural choice for *describing* a
+surface and for the 25-delta RR/BF I report (they live at fixed delta by construction). I'm
+careful in interview not to claim a *dynamic* regime — I have snapshots, not a hedging
+backtest — so "which sticky rule does the market obey as spot moves" is a dynamics question
+my 2-snapshot window can't answer; the parameterization is a modeling choice, not an
+empirical claim about smile dynamics. The practical consequence sticky-delta has for a
+hedger is a skew-delta correction (next question).
+
+## 17. Why SVI (and total-variance interpolation) rather than SABR or a spline?
+
+SVI and SABR both parameterize a single-expiry smile with ~4–5 params and a fat-tailed,
+skewed shape. I chose **raw SVI** (`src/surface/svi.py`) for three concrete reasons: (1) it
+parameterizes **total implied variance `w = σ²τ`** directly, which is exactly the quantity
+the **calendar-no-arbitrage** condition constrains (w non-decreasing in τ at fixed k — my
+`src/noarb` calendar scan checks precisely this, cheaply); (2) it has **closed-form
+butterfly-arbitrage conditions** — Gatheral's Durrleman `g(k) ≥ 0`, which I evaluate
+analytically (`svi_w_derivatives` → `durrleman_g`) rather than numerically; and (3) the Lee
+moment bound maps to a simple linear parameter constraint `b(1+|ρ|) ≤ 2`. SABR is the more
+natural choice when you want a *dynamic* model tied to a stochastic-vol SDE (and its
+lognormal/normal implied-vol expansions are the market standard for rates); SVI is the
+better *static-surface fitter*, which is this project's job. A spline would fit tighter but
+gives up the no-arb structure — it'll happily interpolate an arbitrageable smile. The
+honest caveat: raw SVI can still admit butterfly arb in the wings, which is exactly why I
+run the post-fit `g(k)` scan instead of trusting the parameterization alone.
+
+## 18. Higher-order Greeks — vanna and volga — and skew-delta?
+
+Beyond the five first/second-order Greeks I implement (`src/bs`), the two an options MM
+watches on a skewed book are **vanna** `∂²V/∂S∂σ` (how delta moves as vol moves, or
+equivalently how vega moves as spot moves) and **volga/vomma** `∂²V/∂σ²` (how vega moves as
+vol moves — the vega convexity that makes a long-wings position gain from vol-of-vol). On a
+*skewed* surface they matter because the smile itself reprices as spot moves: the effective
+delta a desk hedges is not the raw Black-Scholes delta but a **skew-adjusted (skew-delta)**
+`∂V/∂S + (∂V/∂σ)(∂σ/∂S)`, where `∂σ/∂S` comes from the smile's slope in strike. My surface
+supplies the pieces — the calibrated `σ(k)` slice gives `∂σ/∂K` analytically, and `src/bs`
+gives vega — so the skew-delta is one composition away; I don't ship it because it's a
+hedging quantity and the project is deliberately descriptive/pricing-only, but I can derive
+it on the board from what's already here. Vanna/volga also explain *why* the 25-delta RR and
+BF are the market's chosen smile summary: RR is essentially the price of vanna (skew), BF
+the price of volga (wing convexity).
 
 ---
 
