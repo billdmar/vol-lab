@@ -71,8 +71,9 @@ def fig_surface_3d(surf, ccy: str, date_str: str, outdir: str) -> str:
     fig = plt.figure(figsize=(8.5, 6.5))
     ax = fig.add_subplot(111, projection="3d")
 
-    # A common log-moneyness grid, clipped to the union of observed smile ranges
-    # so the SVI surface is drawn only where the calibration was informed by data.
+    # A common log-moneyness grid, clipped to the intersection of the per-expiry smile
+    # ranges (max of the mins, min of the maxs) so the SVI surface is drawn only where
+    # every expiry has data — no extrapolated wings on the 3D plot.
     k_lo = max(min(p.log_moneyness for p in s.smile.points) for s in surf.slices)
     k_hi = min(max(p.log_moneyness for p in s.smile.points) for s in surf.slices)
     k_grid = np.linspace(k_lo, k_hi, 60)
@@ -122,7 +123,12 @@ def fig_smile_overlay(surf, ccy: str, date_str: str, outdir: str) -> str:
     # Pick up to four expiries spread across the term structure (short..long).
     slices = surf.slices
     n_pick = min(4, len(slices))
-    idx = [round(i * (len(slices) - 1) / (n_pick - 1)) for i in range(n_pick)]
+    # Guard the degenerate single-slice surface (n_pick == 1) so the even-spacing
+    # index computation never divides by n_pick - 1 == 0.
+    if n_pick <= 1:
+        idx = list(range(n_pick))
+    else:
+        idx = [round(i * (len(slices) - 1) / (n_pick - 1)) for i in range(n_pick)]
     picked = [slices[j] for j in idx]
     # Ordinal ramp: start no lighter than step 300 (palette ordinal-contrast rule)
     # so the shortest-expiry curve stays legible on the light surface.

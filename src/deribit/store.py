@@ -36,6 +36,21 @@ def _to_opt_float(value: Any) -> float | None:
     return float(value)
 
 
+def _require_float(row: dict[str, Any], key: str) -> float:
+    """Coerce a REQUIRED numeric field to float, failing loud on a missing/null value.
+
+    `mark_price` and `underlying_price` are non-optional in the schema; a null there
+    means a malformed row, so we raise a clear error rather than let float(None) surface
+    a cryptic TypeError deep in the load.
+    """
+    value = row.get(key)
+    if value is None:
+        raise ValueError(
+            f"row {row.get('instrument_name', '?')!r}: required field {key!r} is missing or null"
+        )
+    return float(value)
+
+
 def _mark_iv_decimal(raw: Any) -> float | None:
     """Convert Deribit's percent mark_iv to a decimal, or None if absent/zero.
 
@@ -56,7 +71,7 @@ def _build_quote(row: dict[str, Any], index_price: float, collected_ts: float) -
     name = row["instrument_name"]
     parsed = parse_instrument_name(name)
 
-    mark_price_coin = float(row["mark_price"])
+    mark_price_coin = _require_float(row, "mark_price")
     # Inverse-contract conversion: coin premium x index price -> USD premium.
     mark_price_usd = mark_price_coin * index_price
 
@@ -77,7 +92,7 @@ def _build_quote(row: dict[str, Any], index_price: float, collected_ts: float) -
         mark_iv=_mark_iv_decimal(row.get("mark_iv")),
         open_interest=float(row.get("open_interest", 0.0)),
         index_price=index_price,
-        underlying_price=float(row["underlying_price"]),
+        underlying_price=_require_float(row, "underlying_price"),
         snapshot_ts=snapshot_ts,
     )
 

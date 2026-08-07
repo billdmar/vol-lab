@@ -24,7 +24,7 @@ from src.deribit import (
     parse_instrument_name,
 )
 from src.deribit.parse import _parse_expiry, _parse_strike
-from src.deribit.store import _mark_iv_decimal, _to_opt_float
+from src.deribit.store import _mark_iv_decimal, _require_float, _to_opt_float
 from src.schema import OptionQuote, Snapshot
 
 FIXTURE_DIR = "data/snapshots"
@@ -141,6 +141,16 @@ def test_null_bid_ask_maps_to_none():
     assert _to_opt_float(None) is None
     assert _to_opt_float(0.687) == pytest.approx(0.687)
     assert _to_opt_float(0) == 0.0
+
+
+def test_required_float_fails_loud_on_missing_or_null():
+    # A required numeric field (mark_price / underlying_price) that is null or absent
+    # must raise a clear ValueError naming the field, not a cryptic float(None) TypeError.
+    assert _require_float({"mark_price": 0.05}, "mark_price") == pytest.approx(0.05)
+    with pytest.raises(ValueError, match="mark_price"):
+        _require_float({"instrument_name": "BTC-X", "mark_price": None}, "mark_price")
+    with pytest.raises(ValueError, match="underlying_price"):
+        _require_float({"instrument_name": "BTC-X"}, "underlying_price")
 
 
 # --------------------------------------------------------------- real-fixture load

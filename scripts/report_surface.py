@@ -120,7 +120,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true", help="also print a machine-readable JSON dump")
     args = ap.parse_args(argv)
 
-    paths = sorted(glob.glob("data/snapshots/snapshot_*.json"))
+    # Resolve snapshots from the repo root so the script works regardless of cwd.
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    paths = sorted(glob.glob(os.path.join(repo_root, "data", "snapshots", "snapshot_*.json")))
     if not paths:
         print("no snapshots found under data/snapshots/")
         return 1

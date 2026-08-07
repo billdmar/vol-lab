@@ -30,8 +30,9 @@ import numpy as np
 from src.schema import OptionQuote, Snapshot
 from src.surface import build_surface
 
-# Moneyness buckets on |ln(K/F)| (dimensionless). ATM ~ within 5 vol-of-a-year of the
-# forward; near-money out to ~20%; the rest is the illiquid wing where vega collapses.
+# Moneyness buckets on |ln(K/F)| (dimensionless). ATM = |ln(K/F)| < 0.05, i.e. strike
+# within ~5% of the forward; near-money out to ~20%; the rest is the illiquid wing
+# where vega collapses.
 _ATM_ABS_K = 0.05
 _NEAR_ABS_K = 0.20
 
