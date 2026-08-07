@@ -107,8 +107,9 @@ shift, `sigma > 0` curvature.
 - `b ≥ 0`, `−0.999 ≤ rho ≤ 0.999`, `sigma ≥ 1e−4` (domain bounds);
 - `a + b·sigma·sqrt(1−rho²) ≥ 0` — the global minimum of `w(k)` stays
   non-negative (no negative variance anywhere);
-- `b·(1+|rho|)·tau ≤ 4` — the Lee moment bound on asymptotic wing slopes
-  (no vertical-spread arbitrage in the tails).
+- `b·(1+|rho|) ≤ 2` — the Lee moment bound on the asymptotic wing slope of *total*
+  variance (each wing slope ≤ 2; τ-independent because raw SVI's `w` is already
+  σ²·τ), ruling out vertical-spread arbitrage in the tails.
 
 Calibration is a **deterministic multi-start** (fixed starts over `rho`/`sigma`;
 no RNG) weighted least squares, with real mids weighted `1.0` vs mark-fallbacks

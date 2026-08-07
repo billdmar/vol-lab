@@ -29,7 +29,7 @@ constraints and a strictly descriptive BTC/ETH volatility research note.
 | Put-call parity (model) | **~2e-14** (machine precision, gate 1e-10) |
 | **Exchange differential** vs Deribit mark IV | median \|Δσ\| = **0.18 vol pts (BTC)** / 0.39 (ETH)² |
 | No-arbitrage scan | 0 calendar violations; butterfly clean in the liquid region |
-| Test coverage (engines) | **96%** (every module ≥ 91%), 198 tests, green CI |
+| Test coverage (engines) | **96%** (every module ≥ 91%), 199 tests, green CI |
 
 *¹ Variance-reduction speedup is measured as the equal-precision path-count multiplier at
 S=K=100, τ=0.75, r=3%, σ=65%, q=1%, 100k paths, seed 12345 (it is parameter-dependent;
@@ -98,7 +98,7 @@ intervals and honest window caveats: [`docs/RESEARCH_NOTE.md`](docs/RESEARCH_NOT
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"                       # pinned runtime + dev tooling (see pyproject.toml)
 
-make verify                                   # ruff + mypy + 198 tests + coverage gate + report + figures
+make verify                                   # ruff + mypy + 199 tests + coverage gate + report + figures
 # or run the pieces directly:
 ruff check . && mypy && coverage run -m pytest && coverage report
 python scripts/report_surface.py --all-snapshots   # reproduce every statistic
