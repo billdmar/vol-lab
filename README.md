@@ -123,5 +123,16 @@ python scripts/collect_snapshot.py                 # collect a fresh snapshot (p
 See [`docs/DESIGN.md`](docs/DESIGN.md) for every modeling choice's rationale and
 [`docs/INTERVIEW_NOTES.md`](docs/INTERVIEW_NOTES.md) for the theory worked through this code.
 
+## Documentation
+
+| Doc | What it's for |
+|---|---|
+| [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) | Guided tour — architecture, repo map, design rationale, how to read/run |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | The *why* behind every modeling choice + the tolerance/gate map |
+| [`docs/RESEARCH_NOTE.md`](docs/RESEARCH_NOTE.md) | Descriptive BTC/ETH vol study (smile, skew, term structure) with CIs |
+| [`docs/INTERVIEW_NOTES.md`](docs/INTERVIEW_NOTES.md) | 18 options-MM interview questions answered from this code |
+| [`docs/CHEATSHEET.md`](docs/CHEATSHEET.md) | One-page rapid recall — numbers, formulas, answer skeletons |
+| [`docs/ENV.md`](docs/ENV.md) | Machine + pinned toolchain |
+
 ## License
 MIT — see [LICENSE](LICENSE).
