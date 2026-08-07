@@ -24,10 +24,17 @@ Frozen numerical conventions (rationale in docs/DESIGN.md):
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+import numpy as np
+import numpy.typing as npt
+
 from src.schema import OptionType
+
+# Array-like inputs to the calibrator (scalar/sequence/ndarray of floats).
+ArrayLike = npt.NDArray[np.float64] | Sequence[float] | float
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,9 +129,9 @@ class Calibrator(Protocol):
     def calibrate(
         self,
         *,
-        log_moneyness,   # array-like of ln(strike/forward)
-        total_variance,  # array-like of w = sigma^2 * tau
-        weights=None,    # optional array-like fit weights (e.g. by liquidity)
+        log_moneyness: ArrayLike,   # ln(strike/forward)
+        total_variance: ArrayLike,  # w = sigma^2 * tau
+        weights: ArrayLike | None = None,  # optional fit weights (e.g. by liquidity)
     ) -> dict[str, float]:
         """Return fitted parameters (raw-SVI: a, b, rho, m, sigma)."""
         ...

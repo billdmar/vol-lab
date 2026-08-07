@@ -42,10 +42,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from src.common import DEFAULT_SEED
+from src.common import mean_stderr as _mean_stderr
 from src.interfaces import Greeks, PriceResult
 from src.schema import OptionType
 
-DEFAULT_SEED = 12345
 DEFAULT_PATHS = 200_000
 
 
@@ -69,27 +70,6 @@ def _payoff(terminal: np.ndarray, strike: float, option_type: OptionType) -> np.
     if option_type == "P":
         return np.maximum(strike - terminal, 0.0)
     raise ValueError(f"option_type must be 'C' or 'P', got {option_type!r}")
-
-
-def _mean_stderr(values: np.ndarray, *, antithetic: bool) -> tuple[float, float]:
-    """Sample mean and standard error of the mean.
-
-    With antithetic sampling the draws come in perfectly negatively-correlated pairs
-    (Z, -Z), so treating all 2m values as independent would understate the variance.
-    We collapse each pair into its mean and compute the stderr across the m *pair
-    means* — the statistically correct unit of independent replication.
-    """
-    values = np.asarray(values, dtype=float)
-    if antithetic:
-        m = values.size // 2
-        est = 0.5 * (values[:m] + values[m : 2 * m])
-    else:
-        est = values
-    n = est.size
-    mean = float(est.mean())
-    # ddof=1 (sample) variance; stderr of the mean = s / sqrt(n).
-    stderr = float(est.std(ddof=1) / math.sqrt(n)) if n > 1 else 0.0
-    return mean, stderr
 
 
 class MonteCarloPricer:
@@ -386,16 +366,24 @@ class MonteCarloPricer:
         payoff with a kink). Per-estimator stderrs are available via the dedicated
         methods above for the honest reconciliation report.
         """
-        kw = {
-            "spot": spot, "strike": strike, "tau": tau, "rate": rate, "sigma": sigma,
-            "option_type": option_type, "carry": carry,
-        }
+        # Each keyword is passed explicitly (not **splatted from a mixed-type dict) so the
+        # static types of option_type (Literal) and the floats are preserved.
         return Greeks(
-            delta=self.pathwise_delta(**kw).value,
-            gamma=self.lr_gamma(**kw).value,
-            vega=self.pathwise_vega(**kw).value,
-            theta=self.pathwise_theta(**kw).value,
-            rho=self.pathwise_rho(**kw).value,
+            delta=self.pathwise_delta(
+                spot=spot, strike=strike, tau=tau, rate=rate, sigma=sigma,
+                option_type=option_type, carry=carry).value,
+            gamma=self.lr_gamma(
+                spot=spot, strike=strike, tau=tau, rate=rate, sigma=sigma,
+                option_type=option_type, carry=carry).value,
+            vega=self.pathwise_vega(
+                spot=spot, strike=strike, tau=tau, rate=rate, sigma=sigma,
+                option_type=option_type, carry=carry).value,
+            theta=self.pathwise_theta(
+                spot=spot, strike=strike, tau=tau, rate=rate, sigma=sigma,
+                option_type=option_type, carry=carry).value,
+            rho=self.pathwise_rho(
+                spot=spot, strike=strike, tau=tau, rate=rate, sigma=sigma,
+                option_type=option_type, carry=carry).value,
         )
 
 

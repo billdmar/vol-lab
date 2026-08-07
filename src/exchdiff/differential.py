@@ -28,7 +28,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from src.schema import OptionQuote, Snapshot
-from src.surface.surface import build_surface
+from src.surface import build_surface
 
 # Moneyness buckets on |ln(K/F)| (dimensionless). ATM ~ within 5 vol-of-a-year of the
 # forward; near-money out to ~20%; the rest is the illiquid wing where vega collapses.

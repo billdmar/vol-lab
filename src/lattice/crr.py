@@ -27,7 +27,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from src.interfaces import PriceResult
+from src.common import intrinsic as _intrinsic
+from src.interfaces import Pricer, PriceResult
 from src.schema import OptionType
 
 
@@ -73,15 +74,6 @@ class CRRBinomial:
             american=self.american,
         )
         return PriceResult(price=value)
-
-
-def _intrinsic(spot_grid: np.ndarray, strike: float, option_type: OptionType) -> np.ndarray:
-    """Vectorized option intrinsic value on an array of spot prices."""
-    if option_type == "C":
-        return np.maximum(spot_grid - strike, 0.0)
-    if option_type == "P":
-        return np.maximum(strike - spot_grid, 0.0)
-    raise ValueError(f"option_type must be 'C' or 'P', got {option_type!r}")
 
 
 def _crr_price(
@@ -148,7 +140,7 @@ def _crr_price(
     return float(values[0])
 
 
-def _default_bs_pricer():
+def _default_bs_pricer() -> Pricer:
     """Lazily import the Black-Scholes pricer from src.bs for the convergence harness.
 
     Decoupled on purpose: the harness only needs *a* `Pricer` implementing the frozen
@@ -178,7 +170,7 @@ def convergence_order(
     sigma: float,
     option_type: OptionType,
     carry: float = 0.0,
-    bs_pricer=None,
+    bs_pricer: Pricer | None = None,
     steps: tuple[int, ...] = (50, 100, 200, 400, 800, 1600),
 ) -> dict[str, object]:
     """Measure the empirical convergence order of European CRR toward Black-Scholes.

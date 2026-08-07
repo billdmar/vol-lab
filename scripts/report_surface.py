@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.deribit.store import load_snapshot  # noqa: E402
 from src.exchdiff.differential import run_exchange_differential  # noqa: E402
 from src.noarb.scan import scan_surface  # noqa: E402
-from src.surface.surface import build_surface  # noqa: E402
+from src.surface import build_surface  # noqa: E402
 
 
 def _expiry_label(ts: float) -> str:

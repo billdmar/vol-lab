@@ -19,10 +19,16 @@ import pytest
 from src.bs import BS
 from src.deribit.store import load_snapshot
 from src.schema import OptionQuote
-from src.surface.forwards import infer_forward, year_fraction
-from src.surface.smiles import build_smile
-from src.surface.surface import build_surface
-from src.surface.svi import SVIParams, calibrate_svi, svi_iv, svi_total_variance
+from src.surface import (
+    SVIParams,
+    build_smile,
+    build_surface,
+    calibrate_svi,
+    infer_forward,
+    svi_iv,
+    svi_total_variance,
+    year_fraction,
+)
 
 FIXTURE = sorted(glob.glob("data/snapshots/snapshot_*.json"))[-1]
 

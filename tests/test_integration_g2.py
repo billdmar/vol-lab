@@ -23,7 +23,7 @@ import glob
 from src.deribit.store import load_snapshot
 from src.exchdiff.differential import run_exchange_differential
 from src.noarb.scan import scan_surface
-from src.surface.surface import build_surface
+from src.surface import build_surface
 
 FIXTURES = sorted(glob.glob("data/snapshots/snapshot_*.json"))
 

@@ -14,6 +14,7 @@ import matplotlib
 matplotlib.use("Agg")  # headless, before any pyplot import
 
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.figure import Figure  # noqa: E402
 
 # Chart chrome & ink (dataviz reference palette, light surface).
 PALETTE = {
@@ -75,7 +76,7 @@ def apply_house_style() -> None:
     )
 
 
-def footer(fig, collected_date: str) -> None:
+def footer(fig: Figure, collected_date: str) -> None:
     """Stamp the shared provenance footer on a figure (descriptive-only)."""
     fig.text(
         0.99,
@@ -96,7 +97,7 @@ def sample_ramp(ramp: list[str], n: int) -> list[str]:
     return [ramp[j] for j in idx]
 
 
-def savefig(fig, path: str) -> None:
+def savefig(fig: Figure, path: str) -> None:
     """Save a figure at house dpi with a tight-ish, deterministic layout."""
     fig.savefig(path, dpi=140, bbox_inches="tight", pad_inches=0.25)
     plt.close(fig)

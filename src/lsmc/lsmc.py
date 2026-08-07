@@ -48,42 +48,15 @@ import math
 
 import numpy as np
 
+from src.common import DEFAULT_SEED
+from src.common import intrinsic as _intrinsic
+from src.common import mean_stderr as _mean_stderr
 from src.interfaces import PriceResult
 from src.schema import OptionType
 
-DEFAULT_SEED = 12345
 DEFAULT_PATHS = 100_000
 DEFAULT_STEPS = 50
 DEFAULT_BASIS_DEGREE = 3
-
-
-def _intrinsic(spot_grid: np.ndarray, strike: float, option_type: OptionType) -> np.ndarray:
-    """Vectorized option intrinsic value on an array of spot prices."""
-    if option_type == "C":
-        return np.maximum(spot_grid - strike, 0.0)
-    if option_type == "P":
-        return np.maximum(strike - spot_grid, 0.0)
-    raise ValueError(f"option_type must be 'C' or 'P', got {option_type!r}")
-
-
-def _mean_stderr(values: np.ndarray, *, antithetic: bool) -> tuple[float, float]:
-    """Sample mean and standard error of the mean.
-
-    With antithetic sampling the paths come in negatively-correlated pairs; treating
-    all draws as independent would misstate the variance, so we collapse each pair
-    into its mean and compute the stderr across the pair means — the statistically
-    correct unit of independent replication (same convention as src/mc).
-    """
-    values = np.asarray(values, dtype=float)
-    if antithetic:
-        m = values.size // 2
-        est = 0.5 * (values[:m] + values[m : 2 * m])
-    else:
-        est = values
-    n = est.size
-    mean = float(est.mean())
-    stderr = float(est.std(ddof=1) / math.sqrt(n)) if n > 1 else 0.0
-    return mean, stderr
 
 
 class LSMCPricer:

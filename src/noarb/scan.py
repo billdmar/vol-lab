@@ -27,14 +27,17 @@ markets: it RUNS and QUANTIFIES violations with plausible causes; it does not as
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
+import numpy.typing as npt
 
 from config.tolerances import TOL
-from src.surface.smiles import Smile
-from src.surface.surface import Surface
-from src.surface.svi import SVIParams, svi_total_variance
+from src.surface import Smile, Surface, SVIParams, svi_total_variance
+
+FloatArray = npt.NDArray[np.float64]
+ArrayLike = FloatArray | Sequence[float] | float
 
 _G_MIN = TOL["svi_butterfly_g_min"].value
 
@@ -42,7 +45,9 @@ _G_MIN = TOL["svi_butterfly_g_min"].value
 # --------------------------------------------------------------------------- SVI derivatives
 
 
-def svi_w_derivatives(k, params: SVIParams):
+def svi_w_derivatives(
+    k: ArrayLike, params: SVIParams
+) -> tuple[FloatArray, FloatArray, FloatArray]:
     """Analytic (w, w', w'') of raw-SVI total variance at log-moneyness k.
 
     With u = k - m and s = sqrt(u^2 + sigma^2):
@@ -61,7 +66,7 @@ def svi_w_derivatives(k, params: SVIParams):
     return w, wp, wpp
 
 
-def durrleman_g(k, params: SVIParams):
+def durrleman_g(k: ArrayLike, params: SVIParams) -> FloatArray:
     """Gatheral's Durrleman g(k) for a raw-SVI slice (analytic derivatives).
 
     g(k) = (1 - k*w'/(2w))^2 - (w'^2/4)(1/w + 1/4) + w''/2.

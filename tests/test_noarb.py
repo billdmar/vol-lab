@@ -28,8 +28,7 @@ from src.noarb import (
     svi_w_derivatives,
 )
 from src.noarb.scan import scan_price_butterfly
-from src.surface.surface import build_surface
-from src.surface.svi import SVIParams, svi_total_variance
+from src.surface import SVIParams, build_surface, svi_total_variance
 
 # A calm, arb-free slice: modest wings, gentle curvature (typical liquid BTC smile).
 _CALM = SVIParams(a=0.02, b=0.10, rho=-0.20, m=0.0, sigma=0.20)

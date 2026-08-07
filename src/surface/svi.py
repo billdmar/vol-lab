@@ -27,10 +27,16 @@ starts, no RNG). Reports RMSE in total-variance and in vol-point space.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
+import numpy.typing as npt
 from scipy.optimize import minimize
+
+# k / w inputs accept a python scalar, a sequence, or an ndarray (we np.asarray them).
+FloatArray = npt.NDArray[np.float64]
+ArrayLike = FloatArray | Sequence[float] | float
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,14 +61,14 @@ class SVIFit:
     converged: bool
 
 
-def svi_total_variance(k, params: SVIParams):
+def svi_total_variance(k: ArrayLike, params: SVIParams) -> FloatArray:
     """Raw-SVI total variance w(k). Accepts scalar or array k."""
     k = np.asarray(k, dtype=float)
     a, b, rho, m, sigma = params.a, params.b, params.rho, params.m, params.sigma
     return a + b * (rho * (k - m) + np.sqrt((k - m) ** 2 + sigma**2))
 
 
-def svi_iv(k, params: SVIParams, tau: float):
+def svi_iv(k: ArrayLike, params: SVIParams, tau: float) -> FloatArray:
     """Implied vol (decimal) from the SVI slice: sqrt(w(k)/tau), clipped at 0."""
     w = np.maximum(svi_total_variance(k, params), 0.0)
     return np.sqrt(w / tau)
@@ -85,11 +91,11 @@ def _initial_guesses(k: np.ndarray, w: np.ndarray) -> list[SVIParams]:
 
 
 def calibrate_svi(
-    log_moneyness,
-    total_variance,
+    log_moneyness: ArrayLike,
+    total_variance: ArrayLike,
     tau: float,
     *,
-    weights=None,
+    weights: ArrayLike | None = None,
 ) -> SVIFit:
     """Calibrate raw SVI to (k, w) points under no-arbitrage domain constraints.
 

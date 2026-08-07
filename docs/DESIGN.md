@@ -1,8 +1,8 @@
 # DESIGN.md — vol-lab modeling decisions & rationale
 
 Every modeling choice in vol-lab (day count, rate assumption, illiquid-strike
-filtering, SVI constraint set, tolerances) gets its rationale recorded here, per
-CLAUDE.md. Numerical conventions referenced below are frozen in `src/schema.py`,
+filtering, SVI constraint set, tolerances) gets its rationale recorded here.
+Numerical conventions referenced below are frozen in `src/schema.py`,
 `src/interfaces.py`, and `config/tolerances.py`; measured results cite the
 2026-08-07 snapshot fixtures and are reproducible via `scripts/report_surface.py`.
 
@@ -10,7 +10,8 @@ CLAUDE.md. Numerical conventions referenced below are frozen in `src/schema.py`,
 vol-lab prices vanilla crypto options and calibrates an implied-volatility
 surface from real Deribit market data, cross-verifying four engines against each
 other, against theory, and against the exchange's published mark IV. Strictly a
-numerics/research project — no trading claims (see CLAUDE.md "Never do").
+numerics/research project — no trading claims, no forecasts (the research note is
+descriptive only, with confidence intervals).
 
 **Delivered:** four pricing engines (Black-Scholes, CRR binomial, Monte Carlo,
 Longstaff-Schwartz), a Deribit snapshot pipeline (1,540 BTC+ETH instruments),

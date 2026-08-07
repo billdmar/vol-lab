@@ -22,7 +22,7 @@ from scipy.stats import norm
 from src.schema import OptionQuote
 from src.surface.forwards import ForwardFit, infer_forwards_all_expiries
 from src.surface.smiles import Smile, build_smile
-from src.surface.svi import SVIFit, calibrate_svi, svi_iv
+from src.surface.svi import SVIFit, SVIParams, calibrate_svi, svi_iv
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,8 +50,8 @@ class Surface:
         return sorted((s.tau, s.atm_vol) for s in self.slices)
 
 
-def _k_at_delta(target_delta: float, params, tau: float, forward: float, rate: float,
-                option_type: str) -> float | None:
+def _k_at_delta(target_delta: float, params: SVIParams, tau: float, forward: float,
+                rate: float, option_type: str) -> float | None:
     """Find log-moneyness k where the SVI-implied BS delta equals target_delta.
 
     Solves BS_delta(k; sigma=SVI(k)) = target on the OTM side. Returns None if no bracket.
@@ -80,7 +80,8 @@ def _k_at_delta(target_delta: float, params, tau: float, forward: float, rate: f
         return None
 
 
-def _rr_bf_25(params, tau: float, forward: float, rate: float, atm_vol: float):
+def _rr_bf_25(params: SVIParams, tau: float, forward: float, rate: float,
+              atm_vol: float) -> tuple[float | None, float | None]:
     """25-delta risk-reversal and butterfly read off the calibrated SVI slice."""
     k_call = _k_at_delta(0.25, params, tau, forward, rate, "C")
     k_put = _k_at_delta(-0.25, params, tau, forward, rate, "P")

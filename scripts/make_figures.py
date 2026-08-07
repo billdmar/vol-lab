@@ -41,8 +41,7 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: E402,F401  (registers 3d projec
 from src.deribit.store import load_snapshot  # noqa: E402
 from src.exchdiff.differential import run_exchange_differential  # noqa: E402
 from src.lattice import convergence_order  # noqa: E402
-from src.surface.surface import build_surface  # noqa: E402
-from src.surface.svi import svi_iv  # noqa: E402
+from src.surface import build_surface, svi_iv  # noqa: E402
 from src.viz.style import (  # noqa: E402
     PALETTE,
     SEQ_BLUE,
