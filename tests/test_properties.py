@@ -207,3 +207,50 @@ def test_american_ge_european(spot, strike, tau, rate, sigma, carry):
             spot=spot, strike=strike, tau=tau, rate=rate, sigma=sigma, option_type=ot, carry=carry
         ).price
         assert ame >= eur - 1e-9, (ot, eur, ame)
+
+
+# ------------------------------------------------------- 5. negative-rate regime
+# Crypto/EUR options can trade under negative rates; nothing in the BS forward/discount
+# or the parity identity assumes rate >= 0, but the other properties only sample rate in
+# [0, 0.15]. This exercises the sign-negative regime explicitly across price bounds and
+# parity, so a latent sign assumption in the forward/discount would surface here.
+# Spot/strike/tau/sigma stay modest: parity is an ABSOLUTE-1e-10 identity whose float
+# error scales with price*(1-e^{-q*tau}) and with N(d1) saturation at large sigma*sqrt(tau)
+# -- the same magnitude discipline the rate>=0 parity property relies on. The negative
+# rate (not the extreme-vol corner) is what this test is about.
+_neg_rate = st.floats(min_value=-0.10, max_value=-1e-4, allow_nan=False, allow_infinity=False)
+_nr_spot = st.floats(min_value=1.0, max_value=1000.0, allow_nan=False, allow_infinity=False)
+_nr_strike = st.floats(min_value=1.0, max_value=1000.0, allow_nan=False, allow_infinity=False)
+_nr_tau = st.floats(min_value=0.01, max_value=1.0, allow_nan=False, allow_infinity=False)
+_nr_sigma = st.floats(min_value=0.01, max_value=1.0, allow_nan=False, allow_infinity=False)
+_nr_carry = st.floats(min_value=0.0, max_value=0.05, allow_nan=False, allow_infinity=False)
+
+
+@given(spot=_nr_spot, strike=_nr_strike, tau=_nr_tau, rate=_neg_rate,
+       sigma=_nr_sigma, carry=_nr_carry)
+def test_negative_rate_bounds_and_parity(spot, strike, tau, rate, sigma, carry):
+    """Price bounds and put-call parity still hold under negative rates.
+
+    Under r < 0 the discount df = e^{-r*tau} > 1, and the no-arb ceilings/floors follow
+    the same discounted-forward formulas (they never assumed a sign). Parity is the same
+    algebraic identity. If any of these used max(S-K,0) or an r>=0 shortcut, this fails.
+    """
+    c = _price("C", spot=spot, strike=strike, tau=tau, rate=rate, sigma=sigma, carry=carry)
+    p = _price("P", spot=spot, strike=strike, tau=tau, rate=rate, sigma=sigma, carry=carry)
+    df = math.exp(-rate * tau)
+    eqt = math.exp(-carry * tau)
+    fwd = spot * math.exp((rate - carry) * tau)
+    slack = 1e-7 * max(1.0, spot, strike)
+    # Bounds (discounted-forward intrinsic <= price <= sigma->inf ceiling).
+    assert c >= df * max(fwd - strike, 0.0) - slack
+    assert c <= spot * eqt + slack
+    assert p >= df * max(strike - fwd, 0.0) - slack
+    assert p <= strike * df + slack
+    # Parity identity. Parity float error scales with price magnitude (and with N(d1)
+    # saturation for deep/short options), so this property test — which spans a range of
+    # magnitudes — uses a RELATIVE bound rather than the closed-form ABSOLUTE parity_model
+    # tolerance (the latter is exercised at fixed <=5000 magnitude by test_put_call_parity).
+    lhs = c - p
+    rhs = spot * eqt - strike * df
+    scale = max(abs(c), abs(p), spot * eqt, strike * df, 1.0)
+    assert abs(lhs - rhs) <= 1e-10 * scale, (spot, strike, tau, rate, sigma, carry, lhs - rhs)

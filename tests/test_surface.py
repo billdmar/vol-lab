@@ -16,6 +16,7 @@ import math
 import numpy as np
 import pytest
 
+from config.tolerances import TOL
 from src.bs import BS
 from src.deribit.store import load_snapshot
 from src.schema import OptionQuote
@@ -25,12 +26,14 @@ from src.surface import (
     build_surface,
     calibrate_svi,
     infer_forward,
+    infer_forwards_all_expiries,
     svi_iv,
     svi_total_variance,
     year_fraction,
 )
 
-FIXTURE = sorted(glob.glob("data/snapshots/snapshot_*.json"))[-1]
+_SNAPSHOTS = sorted(glob.glob("data/snapshots/snapshot_*.json"))
+FIXTURE = _SNAPSHOTS[-1]
 
 
 # ------------------------------------------------------- synthetic exact recovery
@@ -210,3 +213,93 @@ def test_surface_term_structure_and_rr_finite():
         if s.rr_25 is not None:
             assert abs(s.rr_25) < 0.5   # RR within 50 vol points (sane)
             assert s.bf_25 is not None
+
+
+# --------------------------------------------------- market put-call parity (DoD #4)
+def test_market_parity_residual_within_registered_bound():
+    """Put-call parity holds on the REAL market snapshots within TOL['parity_market_resid_coin'].
+
+    Mission DoD #4: "documented bounded parity residuals on market snapshots." Each expiry's
+    ForwardFit.resid_rms is the RMS of C-P vs df*(F-K) over the used strike pairs, in USD;
+    we convert to coin (÷ index) to compare against the coin-denominated reporting bound.
+    This is the gate that certifies the parity-inferred forward actually fits the quotes.
+    """
+    bound = TOL["parity_market_resid_coin"].value
+    checked = 0
+    for path in _SNAPSHOTS:
+        snap = load_snapshot(path)
+        for ccy in ("BTC", "ETH"):
+            index = snap.index_prices[ccy]
+            fits = infer_forwards_all_expiries(snap.for_underlying(ccy), ref_ts=snap.collected_ts)
+            for expiry_ts, fit in fits.items():
+                resid_coin = fit.resid_rms / index
+                assert resid_coin <= bound, (
+                    f"{ccy} expiry {expiry_ts}: parity residual {resid_coin:.4f} coin "
+                    f"exceeds bound {bound} (investigate stale/wide quotes, do not widen)"
+                )
+                checked += 1
+    assert checked >= 20, f"expected many liquid expiries across snapshots, checked {checked}"
+
+
+# --------------------------------------------------- SVI fit-RMSE reporting threshold
+def test_svi_fit_rmse_liquid_slices_within_report_threshold():
+    """Liquid real slices fit within TOL['svi_fit_rmse_report']; the known sparse/wide
+    mid-tenor outlier (25Sep, stale far-wing marks — see DESIGN.md) is SURFACED not hidden.
+
+    This wires the previously-unused reporting threshold: it is descriptive (not pass/fail
+    for the whole surface), so we assert the liquid majority fit under it and require the
+    outliers to be few and explicitly countable, matching how DESIGN.md describes the fit.
+    """
+    threshold = TOL["svi_fit_rmse_report"].value
+    snap = load_snapshot(FIXTURE)
+    for ccy in ("BTC", "ETH"):
+        surf = build_surface(snap.for_underlying(ccy), ref_ts=snap.collected_ts)
+        over = [s for s in surf.slices if s.svi.rmse_w > threshold]
+        # The vast majority of liquid slices fit under the reporting threshold; only the
+        # documented stale-far-wing-mark slice(s) may exceed it.
+        assert len(over) <= 2, (
+            f"{ccy}: {len(over)} slices over rmse_w {threshold} "
+            f"(expected <=2 documented outliers): "
+            + ", ".join(f"{s.expiry_ts}:{s.svi.rmse_w:.1e}" for s in over)
+        )
+
+
+# --------------------------------------------------- SVI w(k) >= 0 on real fitted slices
+def test_svi_total_variance_nonnegative_on_real_slices():
+    """The fitted SVI total variance stays >= 0 across the scanned wing grid for EVERY real
+    calibrated slice — this is what constraint_wpos (a + b*sigma*sqrt(1-rho^2) >= 0) buys us.
+
+    A regression that broke the constraint wiring would still fit and pass the synthetic
+    single-param test; asserting it on the real fitted params over a wide k-grid guards it.
+    """
+    grid = np.linspace(-1.5, 1.5, 121)  # spans well past the liquid wings
+    for path in _SNAPSHOTS:
+        snap = load_snapshot(path)
+        for ccy in ("BTC", "ETH"):
+            surf = build_surface(snap.for_underlying(ccy), ref_ts=snap.collected_ts)
+            for s in surf.slices:
+                w = svi_total_variance(grid, s.svi.params)
+                assert np.all(w >= -1e-12), (
+                    f"{ccy} expiry {s.expiry_ts}: negative total variance "
+                    f"min={float(np.min(w)):.3e} at fitted params {s.svi.params.as_dict()}"
+                )
+
+
+# --------------------------------------------------- degenerate: only-calls expiry
+def test_only_calls_expiry_yields_no_forward():
+    """An expiry with no put at any strike has zero C/P pairs, so parity inference must
+    return None (honest-unknown) rather than fabricate a forward from calls alone."""
+    ref_ts = 0.0
+    quotes = []
+    for k in (90.0, 100.0, 110.0, 120.0):  # calls only
+        usd = BS.price(spot=100.0, strike=k, tau=0.25, rate=0.0, sigma=0.6,
+                       option_type="C").price
+        coin = usd / 100.0
+        quotes.append(OptionQuote(
+            instrument_name=f"BTC-X-{int(k)}-C", underlying="BTC", option_type="C",
+            strike=k, expiry_ts=1_750_000_000.0, bid_coin=coin * 0.99, ask_coin=coin * 1.01,
+            mark_price_coin=coin, mark_price_usd=usd, mark_iv=0.6, open_interest=10.0,
+            index_price=100.0, underlying_price=100.0, snapshot_ts=ref_ts,
+        ))
+    fit = infer_forward(quotes, ref_ts=ref_ts - 0.25 * 365 * 86400)
+    assert fit is None

@@ -103,6 +103,19 @@ def test_bad_inputs_raise():
                    option_type="X", carry=0.0, steps=100, american=False)  # type: ignore[arg-type]
 
 
+def test_arbitrageable_tree_raises():
+    """A valid sigma but a drift that escapes [d, u] makes the risk-neutral p leave [0,1];
+    the tree is arbitrageable and the engine must FAIL LOUD, not clip p into a fake value.
+
+    Here exp((rate-carry)*dt) > u = exp(sigma*sqrt(dt)) because |rate-carry| is large vs a
+    small sigma at coarse dt, so p = (growth - d)/(u - d) > 1. (Distinct from sigma<=0,
+    which trips the earlier guard.)
+    """
+    with pytest.raises(ValueError, match="risk-neutral p"):
+        _crr_price(spot=100.0, strike=100.0, tau=1.0, rate=0.9, sigma=0.05,
+                   option_type="C", carry=0.0, steps=50, american=False)
+
+
 # ------------------------------------------------------- European -> BS at N=2000
 
 
