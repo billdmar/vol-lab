@@ -143,10 +143,14 @@ This is the note's external verifier. For every option with both a valid mark IV
 mid, we compute `Δσ = our_iv − mark_iv` (`src/exchdiff`). Our independently-written solver
 reproduces the exchange's published mark IV to a **median |Δσ| of a fraction of a vol point**:
 
-| Underlying | Matched points | Median \|Δσ\| (pooled ± CI) |
+The figure below reports each snapshot's per-strike distribution; the table gives the
+per-snapshot median \|Δσ\| averaged across the two snapshots, with the ± half-width
+spanning them (per-snapshot values: BTC 0.11 and 0.25; ETH 0.32 and 0.45 vol pts).
+
+| Underlying | Matched points | Median \|Δσ\| (mean of the 2 snapshots ± spread) |
 |---|---|---|
-| BTC | ~412 / snapshot | **0.18 ± 0.14 vol pts** |
-| ETH | ~353 / snapshot | **0.39 ± 0.12 vol pts** |
+| BTC | ~412 / snapshot | **0.18 ± 0.14 vol pts** (range 0.11–0.25) |
+| ETH | ~353 / snapshot | **0.39 ± 0.12 vol pts** (range 0.32–0.45) |
 
 ![Exchange differential](figures/06_exchange_differential.png)
 

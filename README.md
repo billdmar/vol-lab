@@ -93,13 +93,14 @@ intervals and honest window caveats: [`docs/RESEARCH_NOTE.md`](docs/RESEARCH_NOT
 
 ```bash
 python3.12 -m venv .venv && source .venv/bin/activate
-pip install numpy==2.5.1 scipy==1.18.0 pandas==3.0.5 matplotlib==3.11.1 \
-            hypothesis==6.165.2 pytest==9.1.1 coverage==7.15.4 ruff==0.16.1 requests==2.34.2
+pip install -e ".[dev]"                       # pinned runtime + dev tooling (see pyproject.toml)
 
-ruff check . && coverage run -m pytest && coverage report   # verify (192 tests)
-python scripts/report_surface.py --all-snapshots            # reproduce every statistic
-python scripts/make_figures.py                              # regenerate all figures
-python scripts/collect_snapshot.py                          # collect a fresh snapshot (polite, public API)
+make verify                                   # ruff + mypy + 192 tests + coverage gate + report + figures
+# or run the pieces directly:
+ruff check . && mypy && coverage run -m pytest && coverage report
+python scripts/report_surface.py --all-snapshots   # reproduce every statistic
+python scripts/make_figures.py                     # regenerate all figures
+python scripts/collect_snapshot.py                 # collect a fresh snapshot (polite, public API)
 ```
 
 ## Design highlights
