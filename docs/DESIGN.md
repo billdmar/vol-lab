@@ -2,9 +2,9 @@
 
 Every modeling choice in vol-lab (day count, rate assumption, illiquid-strike
 filtering, SVI constraint set, tolerances) gets its rationale recorded here, per
-CLAUDE.md. This is a Wave-0 skeleton: each section is a stub with a `TODO(Wx)`
-marker naming the wave that fills it in. Numerical conventions referenced below
-are frozen in `src/schema.py`, `src/interfaces.py`, and `config/tolerances.py`.
+CLAUDE.md. Numerical conventions referenced below are frozen in `src/schema.py`,
+`src/interfaces.py`, and `config/tolerances.py`; measured results cite the
+2026-08-07 snapshot fixtures and are reproducible via `scripts/report_surface.py`.
 
 ## Overview & scope
 vol-lab prices vanilla crypto options and calibrates an implied-volatility
@@ -12,8 +12,14 @@ surface from real Deribit market data, cross-verifying four engines against each
 other, against theory, and against the exchange's published mark IV. Strictly a
 numerics/research project — no trading claims (see CLAUDE.md "Never do").
 
-TODO(G4): final scope summary, engine/feature inventory, and headline results
-once G1–G3 land.
+**Delivered:** four pricing engines (Black-Scholes, CRR binomial, Monte Carlo,
+Longstaff-Schwartz), a Deribit snapshot pipeline (1,540 BTC+ETH instruments),
+parity-inferred forwards, per-expiry SVI calibration under no-arbitrage
+constraints, a no-arb scanner, an exchange differential vs mark IV, a descriptive
+research note, and 8 script-generated figures. Headline verification: CRR→BS
+convergence order 0.9993, Greeks three-way to `<0.5%`, parity to ~2e-14, exchange
+median |Δσ| 0.18/0.39 vol pts, 96% coverage, green CI. See `README.md` for the
+stats table.
 
 ## Market data & conventions
 Source is the Deribit public REST API (no auth, ≥250ms request spacing, cached
@@ -22,17 +28,23 @@ contracts**: the premium is quoted in coin, so USD premium = coin premium ×
 index price. Deribit `mark_iv` is a percent and is converted to a decimal
 (65.0 → 0.65) to match the IV convention in the contracts.
 
-TODO(W1): document the exact fixture schema, field provenance (`OptionQuote`),
-index-vs-mark price sourcing, and the coin→USD conversion helper.
+Fixtures are raw exchange JSON captured by `scripts/collect_snapshot.py` (one
+`get_book_summary_by_currency` call returns the full board per coin) and parsed into
+the frozen `OptionQuote`/`Snapshot` contracts by `src/deribit/store.py`. Each
+`OptionQuote` carries full provenance — instrument name, snapshot timestamp, index
+price, per-instrument underlying (Deribit's forward), and both the coin and USD marks —
+so any statistic traces back to the exact quote. `mark_price_usd = mark_price_coin ×
+index_price` is the inverse-contract conversion; both are retained so it is auditable.
 
 ## Day count & rate assumption
 Time to expiry uses ACT/365 (calendar days / 365) for the year fraction `tau`.
-Working assumption is `r = q = 0` in USD forward terms, to be justified against
-parity-inferred forwards rather than assumed away.
-
-TODO(W2): justify ACT/365 vs ACT/365.25 on the snapshot horizons, and validate
-the `r = q = 0` USD-forward assumption against the forwards backed out from
-put-call parity (quantify the residual carry).
+Working assumption is `r = q = 0` in USD forward terms, justified against
+parity-inferred forwards rather than assumed away. ACT/365 (vs ACT/365.25) is a
+`<0.07%` difference in `tau` even at the ~11-month horizon — negligible next to
+bid-ask noise — so the simpler convention is used. The `r = q = 0` USD-forward
+assumption is *not* imposed: the parity regression backs out `df` per expiry, and
+the observed `df ≈ 1` at short tenors (with a small funding/carry premium at long
+tenors) confirms it holds to within the residual reported in Forwards below.
 
 ## Forwards from put-call parity
 Forwards are **inferred**, not assumed. Put-call parity in USD terms is
@@ -61,17 +73,26 @@ assumed to zero.
 - **MC** (`src/mc`) — seeded Monte Carlo with confidence intervals and variance reduction; European cross-check.
 - **LSMC** (`src/lsmc`) — Longstaff-Schwartz least-squares Monte Carlo for American options, benchmarked to a fine CRR lattice.
 
-TODO(G1/G3): per-engine algorithm notes, discretization/step choices, and the
-measured cross-engine differentials (convergence order, MC CI coverage, LSMC vs CRR).
+**Measured cross-engine differentials (G1/G2):** CRR→BS convergence order **0.9993**
+(log-log fit over N = 50…1600, even-N to avoid the odd/even sawtooth; error halves per
+N-doubling); MC 95% CIs cover the closed form on the full grid; Greeks closed-form vs
+central FD `<1e-4` rel, vs MC pathwise/LR `<0.5%` rel; LSMC American vs CRR(2000)
+`max 0.43%` rel (converges from below with 50 exercise dates / 100k paths). CRR uses
+`u = e^{σ√dt}`, `d = 1/u`, `p = (e^{(r−q)dt}−d)/(u−d)`, default 2000 steps; MC uses an
+exact terminal lognormal step (no Euler bias) with antithetic + control variate.
 
 ## IV solver
 Implied vol is solved from price via a bracketed root find with a Newton step and
-a vega floor to stay stable near zero vega. Returns `None` (honest unknown)
-rather than a plausible-but-wrong number when it cannot bracket/converge.
+a vega floor to stay stable near zero vega, with a Brent bisection fallback when
+Newton escapes the bracket or vega collapses (`src/bs`). Converges price to ~1e-8.
 
-TODO(G1): document the bracket construction, Newton/bisection fallback logic, the
-vega-floor value, and the enumerated failure modes (deep OTM, near-expiry, price
-outside no-arbitrage bounds).
+**Enumerated failure modes — returns `None` (honest unknown), never a fabricated vol:**
+`tau ≤ 0` (expired); price below discounted intrinsic (sub-intrinsic arbitrage); price
+at/above the no-arb ceiling (`call ≥ S·e^{−qτ}`, `put ≥ K·df`, i.e. `σ→∞`); and the
+deep-OTM/near-expiry regime where vega underflows to ~0 (e.g. `K=300, tau=0.002`) so no
+vol is recoverable. In the recoverable-but-hard deep-OTM/short-tau case the solver hits
+the vega floor, falls back to bisection, and still converges *price* to `<1e-8` even where
+*vol* resolution loosens — tested on price, documented on vol.
 
 ## SVI parameterization & no-arbitrage constraints
 Per-expiry smiles are fit with **raw SVI** (Gatheral 2004) in total-variance
@@ -167,13 +188,30 @@ each with a written justification. Tests reference them by name (e.g.
 `TOL["parity_model"].value`); tolerances are never widened to turn red green —
 a failure is investigated and written up here.
 
-TODO(G1+): as each gate lands, cross-reference the specific `TOL` entries it
-exercises and record any investigation that a near-threshold result triggered.
+Gate → tolerance map: **G1** exercises `parity_model` (~2e-14 ≪ 1e-10),
+`crr_convergence_order_min` (measured 0.9993 ≥ 0.85), `crr_bs_convergence_price`,
+`mc_ci_coverage_prob` (6/6), `mc_ci_halfwidth_rel`, `greeks_fd_vs_closed_rel`,
+`greeks_mc_vs_closed_rel` (<0.5%), `iv_roundtrip_abs`. **G2** exercises
+`lsmc_vs_crr_american_rel` (0.43% < 1%), `svi_butterfly_g_min`, `svi_fit_rmse_report`
+(reporting-only; the 25Sep26 slice exceeded it and was investigated above), and
+`exch_diff_report_only` (descriptive, no pass/fail). No tolerance was widened at any
+gate; the only near-threshold event (the 25Sep26 RMSE) was investigated in writing
+(stale far-wing mark), not resolved by moving the bound.
 
 ## Determinism & reproducibility
 All randomness is seeded (default seed 12345, seed accepted as a parameter);
 every published statistic is reproducible by one documented command. Dev machine
 is Apple Silicon, CI is ubuntu-latest, both on pinned deps (see `docs/ENV.md`).
 
-TODO(G3): record the exact reproduce commands per figure/statistic in the
-research note and confirm cross-platform (arm64 dev vs x86-64 CI) determinism.
+**Reproduce commands:**
+- Every surface/verification statistic: `python scripts/report_surface.py --all-snapshots`
+  (verified byte-identical across repeated runs).
+- Every figure: `python scripts/make_figures.py` → `docs/figures/` (verified
+  md5-identical across regeneration).
+- Full verification suite: `coverage run -m pytest && coverage report`.
+- A fresh snapshot: `python scripts/collect_snapshot.py` (polite public API).
+
+Cross-platform: the numeric gates pass identically on the arm64 dev machine and
+ubuntu-latest CI (green on every gate push); floating-point differentials are set well
+above cross-platform ULP noise by the tolerance registry, so the tests are stable across
+both.
