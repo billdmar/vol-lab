@@ -28,13 +28,17 @@ N_PATHS = 100_000
 N_STEPS = 50
 SEED = 12345
 
-# ITM / ATM American puts at 5-8% rates: the regime where the early-exercise
-# right is worth the most, so a broken continuation regression fails loudly.
-AMERICAN_PUT_CASES = [
+# Cases where the early-exercise right is worth the most, so a broken continuation
+# regression fails loudly: ITM/ATM American puts at 5-8% rates, plus one American CALL
+# with a dividend yield (carry) high enough that early exercise IS optimal — that call
+# branch of the backward induction is otherwise never cross-verified.
+AMERICAN_CASES = [
     {"spot": 100.0, "strike": 100.0, "tau": 1.0, "rate": 0.06, "sigma": 0.30, "option_type": "P"},
     {"spot": 90.0, "strike": 100.0, "tau": 1.0, "rate": 0.06, "sigma": 0.30, "option_type": "P"},
     {"spot": 100.0, "strike": 110.0, "tau": 0.5, "rate": 0.08, "sigma": 0.40, "option_type": "P"},
     {"spot": 95.0, "strike": 100.0, "tau": 0.75, "rate": 0.05, "sigma": 0.25, "option_type": "P"},
+    {"spot": 120.0, "strike": 100.0, "tau": 1.0, "rate": 0.02, "sigma": 0.30,
+     "option_type": "C", "carry": 0.10},
 ]
 
 CRR_AMERICAN = CRRBinomial(steps=2000, american=True)
@@ -44,9 +48,9 @@ def _lsmc(**kw):
     return LSMCPricer(n_paths=N_PATHS, n_steps=N_STEPS, seed=SEED).price(**kw)
 
 
-@pytest.mark.parametrize("case", AMERICAN_PUT_CASES)
-def test_lsmc_vs_crr_american_put(case):
-    """LSMC American put within TOL['lsmc_vs_crr_american_rel'] of a fine CRR lattice."""
+@pytest.mark.parametrize("case", AMERICAN_CASES)
+def test_lsmc_vs_crr_american(case):
+    """LSMC American price within TOL['lsmc_vs_crr_american_rel'] of a fine CRR lattice."""
     tol = TOL["lsmc_vs_crr_american_rel"]
     assert tol.kind == "rel"
     lsmc = _lsmc(**case)
@@ -57,7 +61,7 @@ def test_lsmc_vs_crr_american_put(case):
     )
 
 
-@pytest.mark.parametrize("case", AMERICAN_PUT_CASES)
+@pytest.mark.parametrize("case", AMERICAN_CASES)
 def test_american_ge_european(case):
     """American value >= European BS value: the early-exercise premium is non-negative.
 
@@ -94,7 +98,7 @@ def test_american_call_no_dividend_matches_european():
 
 def test_determinism_same_seed_identical():
     """Same seed -> bit-for-bit identical price (mandatory reproducibility)."""
-    case = AMERICAN_PUT_CASES[0]
+    case = AMERICAN_CASES[0]
     a = LSMCPricer(n_paths=50_000, n_steps=40, seed=777).price(**case)
     b = LSMCPricer(n_paths=50_000, n_steps=40, seed=777).price(**case)
     assert a.price == b.price
@@ -104,7 +108,7 @@ def test_determinism_same_seed_identical():
 
 def test_different_seed_changes_price():
     """A different seed perturbs the estimate (sanity: the seed is actually used)."""
-    case = AMERICAN_PUT_CASES[0]
+    case = AMERICAN_CASES[0]
     a = LSMCPricer(n_paths=50_000, n_steps=40, seed=1).price(**case)
     b = LSMCPricer(n_paths=50_000, n_steps=40, seed=2).price(**case)
     assert a.price != b.price
@@ -160,7 +164,7 @@ def test_report_lsmc_vs_crr(capsys):
     rels = []
     with capsys.disabled():
         print("\n  LSMC American put vs CRR(2000) lattice:")
-        for case in AMERICAN_PUT_CASES:
+        for case in AMERICAN_CASES:
             lsmc = _lsmc(**case)
             ref = CRR_AMERICAN.price(**case).price
             euro = BS.price(**case).price

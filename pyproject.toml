@@ -1,6 +1,6 @@
 [project]
 name = "vol-lab"
-version = "1.3.0"
+version = "1.3.1"
 description = "Options pricing and implied-volatility surface engine on real Deribit crypto-options data, cross-verified against the exchange."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -81,9 +81,9 @@ filterwarnings = ["error::DeprecationWarning"]
 branch = true
 source = ["src"]
 # The >=90% gate is on the *engines* (pricing, data, surface, verification). src/viz is
-# presentation code (matplotlib figure generation) verified by visual inspection +
-# byte-level determinism (scripts/make_figures.py), not unit tests — so it is excluded
-# from the engine-coverage measurement rather than padded with brittle image assertions.
+# presentation code (matplotlib figure generation) verified by visual inspection + content
+# determinism (scripts/make_figures.py), not unit tests — so it is excluded from the
+# engine-coverage measurement rather than padded with brittle image assertions.
 omit = ["src/**/__init__.py", "src/viz/*"]
 
 [tool.coverage.report]

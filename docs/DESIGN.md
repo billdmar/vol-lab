@@ -209,8 +209,9 @@ is Apple Silicon, CI is ubuntu-latest, both on pinned deps (see `docs/ENV.md`).
 **Reproduce commands:**
 - Every surface/verification statistic: `python scripts/report_surface.py --all-snapshots`
   (verified byte-identical across repeated runs).
-- Every figure: `python scripts/make_figures.py` → `docs/figures/` (verified
-  md5-identical across regeneration).
+- Every figure: `python scripts/make_figures.py` → `docs/figures/` (content-deterministic;
+  most are md5-identical across regeneration, a few differ only in matplotlib/Agg
+  rasterization noise, not in the underlying data).
 - Full verification suite: `coverage run -m pytest && coverage report`.
 - A fresh snapshot: `python scripts/collect_snapshot.py` (polite public API).
 

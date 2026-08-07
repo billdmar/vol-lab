@@ -21,7 +21,7 @@ the slope is `−df` and the intercept is `df·F`, hence `df = −slope`, `F = i
 
 Validation: the inferred `F` is cross-checked against Deribit's own published
 `underlying_price` per expiry. Across all 12 expiries × 2 currencies × 2 snapshots the
-match `dF%` is within roughly 0.5% (most are under 0.3%; the only outliers are
+match `dF%` is within ~0.7% (most are under 0.3%; the only outliers are
 thin far-dated ETH lines, e.g. one 25-Jun-27 expiry at +0.69%). On *model* prices parity
 holds to machine precision (see Q4/Q9). The point I make in interview: the forward is
 *measured*, and I can defend the residual against the exchange's own number.

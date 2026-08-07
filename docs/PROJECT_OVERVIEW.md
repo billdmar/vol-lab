@@ -141,8 +141,9 @@ Verification is the point of the project, not an afterthought.
   committed fixtures, zero calendar-arbitrage violations, and the exchange differential.
 - **Exchange differential** — the external ground truth: our independently-written IV solver
   vs Deribit's published mark IV, descriptive-only, with the full distribution always printed.
-- **Determinism** — one seed (`DEFAULT_SEED = 12345`); SVI/no-arb are RNG-free; figures are
-  byte-deterministic; CI **never calls the live Deribit API** (runs only on committed fixtures).
+- **Determinism** — one seed (`DEFAULT_SEED = 12345`); SVI/no-arb are RNG-free; the surface
+  report regenerates byte-identically and figures are content-deterministic; CI **never calls
+  the live Deribit API** (runs only on committed fixtures).
 
 ## 6. How to read and run it
 

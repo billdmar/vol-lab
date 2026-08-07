@@ -43,6 +43,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from src.common import DEFAULT_SEED
+from src.common import intrinsic as _payoff
 from src.common import mean_stderr as _mean_stderr
 from src.interfaces import Greeks, PriceResult
 from src.schema import OptionType
@@ -61,15 +62,6 @@ class MCGreek:
     value: float
     stderr: float
     method: str
-
-
-def _payoff(terminal: np.ndarray, strike: float, option_type: OptionType) -> np.ndarray:
-    """Undiscounted European vanilla payoff."""
-    if option_type == "C":
-        return np.maximum(terminal - strike, 0.0)
-    if option_type == "P":
-        return np.maximum(strike - terminal, 0.0)
-    raise ValueError(f"option_type must be 'C' or 'P', got {option_type!r}")
 
 
 class MonteCarloPricer:

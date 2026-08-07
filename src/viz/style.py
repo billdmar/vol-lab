@@ -4,7 +4,9 @@ Design follows the dataviz skill's validated default palette (light surface):
 categorical hues assigned in fixed order (never cycled), thin marks, recessive
 grid/axes, text in ink tokens rather than series colors, a legend for >= 2
 series, and a subtle provenance footer on every figure. Everything here is
-deterministic and headless (Agg backend), so figures regenerate byte-stably.
+seeded and headless (Agg backend), so figures regenerate deterministically in
+content (a few are not bit-identical across runs due to minor Agg rasterization
+non-determinism, not any change in the underlying data).
 """
 
 from __future__ import annotations

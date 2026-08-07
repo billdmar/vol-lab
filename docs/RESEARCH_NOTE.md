@@ -101,9 +101,9 @@ becomes a downside skew from ~11 Aug outward:
 
 | Tenor | ETH RR₂₅ (vol pts) |
 |---|---|
-| 1 day | +1.05 ± 1.72 |
-| 3 days | +1.82 ± 1.61 |
-| ~3 days (10Aug) | −0.06 ± 0.57 |
+| 1 day (08Aug) | +1.05 ± 1.72 |
+| 2 days (09Aug) | +1.82 ± 1.61 |
+| 3 days (10Aug) | −0.06 ± 0.57 |
 | 4 days (11Aug) | −1.46 ± 0.39 |
 | 3 weeks | −1.90 ± 0.10 |
 | 10.6 months | −1.48 ± 1.24 |

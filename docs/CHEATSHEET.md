@@ -23,7 +23,7 @@ Numbers reproduce via `python scripts/report_surface.py --all-snapshots`.
 | Forward match vs Deribit's own | within **~0.7%** (max 0.69%, one far-dated ETH line) |
 | No-arbitrage | **0 calendar** violations; butterfly clean in liquid region |
 | Term structure (ATM, contango) | BTC ~**26→42%** · ETH ~**34→56%** |
-| Tests / coverage | **199** tests, **96%** engine coverage, mypy-clean, CI green |
+| Tests / coverage | **201** tests, **96%** engine coverage, mypy-clean, CI green |
 | Tolerance registry | **13** named tolerances, each justified, never widened |
 
 ¹ at S=K=100, τ=0.75, r=3%, σ=65%, q=1%, 100k paths (parameter-dependent).
