@@ -12,6 +12,9 @@ fi
 echo "==> ruff"
 ruff check .
 
+echo "==> mypy"
+mypy
+
 echo "==> tests + coverage (>=90% gate)"
 coverage run -m pytest
 coverage report --fail-under=90
@@ -23,4 +26,4 @@ echo "==> figures"
 python scripts/make_figures.py
 
 echo ""
-echo "verify: OK — all checks passed, coverage >=90%, stats + figures regenerated."
+echo "verify: OK — ruff + mypy clean, coverage >=90%, stats + figures regenerated."

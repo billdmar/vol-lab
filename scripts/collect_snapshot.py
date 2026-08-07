@@ -37,12 +37,16 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 
 BASE = "https://www.deribit.com/api/v2/public"
 USER_AGENT = "vol-lab/0.1 (research; github.com/billdmar/vol-lab)"
 MIN_SPACING_S = 0.25  # >= 250ms between requests (Deribit etiquette)
 CURRENCIES = ("BTC", "ETH")
+MAX_RETRIES = 4       # attempts per request before giving up
+BACKOFF_BASE_S = 0.5  # exponential backoff: 0.5s, 1s, 2s, ... between retries
+RETRY_STATUS = {429, 500, 502, 503, 504}  # transient HTTP codes worth retrying
 
 _last_request_ts = 0.0
 
@@ -56,16 +60,39 @@ def _throttle() -> None:
 
 
 def _get(method: str, **params) -> dict:
-    """One throttled GET against a public Deribit endpoint; returns the JSON `result`."""
-    _throttle()
+    """Throttled GET against a public Deribit endpoint with retry/backoff on transient errors.
+
+    Retries on timeouts, connection errors (`URLError`), and transient HTTP status codes
+    (429 rate-limit, 5xx) with exponential backoff, still honoring the >=250ms spacing on
+    every attempt. A non-transient HTTP error (e.g. 400) or an exhausted retry budget
+    raises — the collector fails loudly rather than writing a partial/fabricated snapshot.
+    """
     qs = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{BASE}/{method}" + (f"?{qs}" if qs else "")
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 (fixed https host)
-        payload = json.loads(resp.read().decode("utf-8"))
-    if "result" not in payload:
-        raise RuntimeError(f"{method}: unexpected payload {payload!r}")
-    return payload["result"]
+
+    last_err: Exception | None = None
+    for attempt in range(MAX_RETRIES):
+        _throttle()
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 (fixed https host)
+                payload = json.loads(resp.read().decode("utf-8"))
+            if "result" not in payload:
+                raise RuntimeError(f"{method}: unexpected payload {payload!r}")
+            return payload["result"]
+        except urllib.error.HTTPError as e:
+            last_err = e
+            if e.code not in RETRY_STATUS:
+                raise  # 4xx (except 429) is a real client error — don't retry.
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+            last_err = e  # transient network / decode blip — retry.
+        if attempt < MAX_RETRIES - 1:
+            wait = BACKOFF_BASE_S * (2**attempt)
+            print(f"[collect] {method} attempt {attempt + 1}/{MAX_RETRIES} failed "
+                  f"({last_err}); retrying in {wait:.1f}s")
+            time.sleep(wait)
+
+    raise RuntimeError(f"{method}: failed after {MAX_RETRIES} attempts; last error: {last_err}")
 
 
 def collect() -> dict:
@@ -118,8 +145,12 @@ def main(argv: list[str] | None = None) -> int:
     snap = collect()
     stamp = dt.datetime.fromtimestamp(snap["collected_ts"], dt.UTC).strftime("%Y%m%d_%H%M%SZ")
     out = os.path.join(args.dir, f"snapshot_{stamp}.json")
-    with open(out, "w") as f:
+    # Atomic write: serialize to a temp file in the same dir, then os.replace() — a crash
+    # mid-write can never leave a truncated fixture at the real path.
+    tmp = out + ".tmp"
+    with open(tmp, "w") as f:
         json.dump(snap, f, separators=(",", ":"))
+    os.replace(tmp, out)
     size_kb = os.path.getsize(out) / 1024.0
     print(f"[collect] wrote {out} ({size_kb:.0f} KB): "
           + ", ".join(f"{c}={snap['counts'][c]}" for c in CURRENCIES)
