@@ -1,4 +1,4 @@
-"""G2 — Surface verification gate (ORCH-owned integration tests).
+"""G2 — Surface verification gate (integration tests).
 
 Ties the surface, no-arb scanner, and exchange differential together on the committed
 Deribit fixtures and asserts the gate's Definition of Done:

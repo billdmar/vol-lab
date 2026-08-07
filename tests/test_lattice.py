@@ -1,11 +1,10 @@
 """Tests for the CRR binomial-tree engine (src/lattice).
 
-Two engines verify each other here: the CRR tree (SA-lattice) and a closed-form
-Black-Scholes reference defined *locally* in this file. The local reference exists
-because src.bs is populated in parallel by another subagent; a self-contained
-Gaussian-CDF BS is an entirely independent algorithm from a recombining lattice, so
-using it as the convergence target is genuine cross-verification, not a tautology.
-The convergence harness accepts an injected `bs_pricer`, which we use here.
+Two engines verify each other here: the CRR tree and a closed-form Black-Scholes
+reference defined *locally* in this file. Using an independent local reference (a
+self-contained Gaussian-CDF BS — an entirely different algorithm from a recombining
+lattice) as the convergence target makes this genuine cross-verification, not a
+tautology. The convergence harness accepts an injected `bs_pricer`, which we use here.
 """
 
 from __future__ import annotations

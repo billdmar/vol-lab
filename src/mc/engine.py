@@ -1,4 +1,4 @@
-"""Monte Carlo European option pricer (G1 — owned by SA-mc).
+"""Monte Carlo European option pricer.
 
 Seeded, deterministic GBM terminal-price simulation for European vanillas. Because
 the payoff of a European option depends only on the *terminal* spot, we sample

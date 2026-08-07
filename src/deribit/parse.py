@@ -1,4 +1,4 @@
-"""Deribit instrument-name parsing (SA-data, owned path).
+"""Deribit instrument-name parsing.
 
 Deribit option instrument names follow a fixed four-field, dash-delimited grammar:
 

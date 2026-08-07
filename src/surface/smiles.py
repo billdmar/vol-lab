@@ -1,4 +1,4 @@
-"""Per-expiry implied-volatility smiles (ORCH-owned, W2).
+"""Per-expiry implied-volatility smiles.
 
 For one expiry we take the forward from `forwards.infer_forward`, invert each option's
 market mid to a Black-Scholes implied vol with our own solver (src.bs), and express the

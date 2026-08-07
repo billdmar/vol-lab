@@ -1,4 +1,4 @@
-"""Static no-arbitrage scanner for calibrated SVI surfaces and raw market quotes (W2/G2).
+"""Static no-arbitrage scanner for calibrated SVI surfaces and raw market quotes.
 
 Three model-free (or SVI-parametric) checks, each QUANTIFIED and never smoothed:
 

@@ -1,4 +1,4 @@
-"""Surface construction tests (ORCH-owned, W2): forwards, smiles, SVI.
+"""Surface construction tests: forwards, smiles, SVI.
 
 Two layers of verification:
   * Synthetic exact-recovery: build option prices from a KNOWN forward and a KNOWN SVI

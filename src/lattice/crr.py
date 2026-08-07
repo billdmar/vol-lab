@@ -144,11 +144,11 @@ def _default_bs_pricer() -> Pricer:
     """Lazily import the Black-Scholes pricer from src.bs for the convergence harness.
 
     Decoupled on purpose: the harness only needs *a* `Pricer` implementing the frozen
-    protocol. We do not hard-code SA-bs's class name at import time; we probe for the
-    conventional exports and fall back with a clear error so a caller can always inject
-    their own reference pricer instead (see `convergence_order`).
+    protocol. We do not hard-code the Black-Scholes class name at import time; we probe
+    for the conventional exports and fall back with a clear error so a caller can always
+    inject their own reference pricer instead (see `convergence_order`).
     """
-    import src.bs as bs  # local import: src.bs is owned/populated by SA-bs
+    import src.bs as bs  # local import to avoid a circular dependency at module load
 
     for name in ("BlackScholes", "BlackScholesPricer", "BSPricer", "Pricer"):
         candidate = getattr(bs, name, None)

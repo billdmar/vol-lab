@@ -1,8 +1,8 @@
-"""G1 — Engine verification gate (ORCH-owned integration tests).
+"""G1 — Engine cross-verification gate (integration tests).
 
 This is the cross-engine differential that ties the four independently-written engines
 together and proves they agree with each other, with theory, and (structurally) with
-the exchange. It is the sequential gate the mission requires after the W1 fan-out:
+the exchange. The four checks that make up the gate:
 
   1. Binomial -> Black-Scholes convergence with a MEASURED empirical order.
   2. Monte Carlo 95% CIs cover the closed-form price across a strike/vol grid.
@@ -74,7 +74,7 @@ def test_crr_converges_to_bs_measured_order():
 def test_mc_ci_covers_closed_form_across_grid():
     """Fraction of 95% MC CIs covering the BS price must exceed the registry threshold.
 
-    Independent seed per grid point (correlated seeds collapse the trials — see SA-mc's
+    Independent seed per grid point (correlated seeds collapse the trials — see the MC engine's
     documented finding), so the coverage fraction is a real measurement.
     """
     covered = 0

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Deribit snapshot collector (ORCH-owned, W0) — raw capture only.
+"""Deribit snapshot collector — raw capture only.
 
 Captures one point-in-time snapshot of the BTC + ETH options board from Deribit's
-PUBLIC API (no auth) and writes it as raw JSON under data/snapshots/. SA-data's
+PUBLIC API (no auth) and writes it as raw JSON under data/snapshots/. The
 `src/deribit` layer parses these raw fixtures into typed `Snapshot`/`OptionQuote`
-objects — this script does NOT parse or interpret, so there is exactly one writer
-per concern (capture here, structured parsing in src/deribit).
+objects — this script does NOT parse or interpret, keeping capture and structured
+parsing cleanly separated (raw capture here, typed parsing in src/deribit).
 
-Deribit etiquette (CLAUDE.md hard rules), all enforced below:
+Deribit etiquette (all enforced below):
   * public endpoints only, no auth
   * descriptive User-Agent
   * >= 250ms spacing between requests

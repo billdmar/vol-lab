@@ -1,10 +1,10 @@
-"""Tolerance registry (W0 — ORCH-owned, frozen; changes go through the orchestrator).
+"""Tolerance registry (single source of truth for every differential tolerance).
 
 ONE place for every differential tolerance in the test suite, each with a written
-justification. The hard rule (CLAUDE.md): a tolerance is NEVER widened to make a
-failing test pass. A failure means investigate and write down the finding — the
-tolerance only moves if the *justification* changes, and that is an ORCH decision
-recorded here in the commit message.
+justification. The hard rule: a tolerance is NEVER widened to make a failing test
+pass. A failure means investigate and write down the finding — the tolerance only
+moves if the *justification* changes, and that is a deliberate decision recorded
+here in the commit message.
 
 Each entry is a `Tol` with:
   * value        — the numeric threshold used by the test

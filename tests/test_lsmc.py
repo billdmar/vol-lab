@@ -1,4 +1,4 @@
-"""LSMC American pricer verification (owned by SA-lsmc).
+"""LSMC American pricer verification.
 
 The reference for American vanilla is a fine CRR lattice (steps=2000). We assert
 the Longstaff-Schwartz price lands within the registered relative tolerance on a

@@ -1,4 +1,4 @@
-"""Longstaff-Schwartz Monte-Carlo (LSMC) American option pricer (G3 — owned by SA-lsmc).
+"""Longstaff-Schwartz Monte-Carlo (LSMC) American option pricer.
 
 Seeded, deterministic GBM path simulation + least-squares regression of the
 continuation value on in-the-money paths (Longstaff & Schwartz, RFS 2001). This

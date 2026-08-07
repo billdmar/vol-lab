@@ -1,4 +1,4 @@
-"""Liquidity filters for Deribit option quotes (SA-data, owned path).
+"""Liquidity filters for Deribit option quotes.
 
 Illiquid quotes (no open interest, one-sided books, blown-out spreads) pollute an
 IV surface. We drop them, but NEVER silently: every filter returns both the surviving

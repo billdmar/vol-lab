@@ -1,4 +1,4 @@
-"""Frozen engine interfaces for vol-lab (W0 — ORCH-owned, do not edit in subagents).
+"""Frozen engine interfaces for vol-lab (the shared protocols; kept stable across the codebase).
 
 Every pricing engine implements `Pricer` (and, where it has Greeks, `GreeksEngine`)
 so the cross-engine differential and three-way Greeks reconciliation can treat

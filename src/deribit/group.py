@@ -1,7 +1,7 @@
-"""Minimal grouping helpers over parsed quotes (SA-data, owned path).
+"""Minimal grouping helpers over parsed quotes.
 
-The frozen `Snapshot` already exposes `for_underlying` and `expiries`; these add the
-one thing W2's per-expiry smile calibration needs — grouping a quote list by expiry
+The `Snapshot` schema already exposes `for_underlying` and `expiries`; these add the
+one thing the per-expiry smile calibration needs — grouping a quote list by expiry
 into deterministically ordered buckets — without duplicating what the schema offers.
 """
 

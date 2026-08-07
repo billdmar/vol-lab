@@ -1,4 +1,4 @@
-"""Full-surface construction: forwards -> smiles -> SVI per expiry (ORCH-owned, W2).
+"""Full-surface construction: forwards -> smiles -> SVI per expiry.
 
 Ties the pieces together for one underlying in one snapshot and exposes the descriptive
 quantities the research note needs: per-expiry SVI params + RMSE, the ATM vol term

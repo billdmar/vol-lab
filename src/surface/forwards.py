@@ -1,4 +1,4 @@
-"""Parity-inferred forwards per expiry (ORCH-owned, W2).
+"""Parity-inferred forwards per expiry.
 
 The forward is not assumed — it is *inferred* from put-call parity on liquid strikes,
 which is exactly the interview talking point the mission wants demonstrated.
@@ -14,7 +14,7 @@ Method (documented in docs/DESIGN.md):
   of pairs used and any dropped are reported (never silently discarded).
 
 Validation: the inferred F is cross-checked against Deribit's own per-expiry
-`underlying_price` (its published forward); the differences are reported in W2/G2.
+`underlying_price` (its published forward); the differences are reported alongside the surface.
 """
 
 from __future__ import annotations

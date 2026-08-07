@@ -1,4 +1,4 @@
-"""Monte Carlo pricing engine (SA-mc owned)."""
+"""Monte Carlo pricing engine."""
 
 from src.mc.engine import (
     DEFAULT_PATHS,

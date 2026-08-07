@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproducible surface/verification report (ORCH, G2) — one command, every statistic.
+"""Reproducible surface/verification report — one command, every statistic.
 
 Runs the full surface pipeline on the committed snapshot fixtures and prints the
 descriptive statistics the research note and README cite: per-expiry SVI RMSE, ATM

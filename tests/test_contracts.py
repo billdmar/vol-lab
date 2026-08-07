@@ -1,8 +1,8 @@
-"""W0 contract smoke tests — exercise the frozen schema/interfaces/tolerances.
+"""Contract smoke tests — exercise the frozen schema/interfaces/tolerances.
 
 These lock the contract surface (provenance fields, derived properties, tolerance
-registry integrity) before any engine is written, and give CI a green, fully-covered
-baseline. Engine-specific tests arrive with their owning subagents in W1+.
+registry integrity) and give CI a green, fully-covered baseline. Engine-specific
+behavior is verified in the per-engine test modules.
 """
 
 from __future__ import annotations

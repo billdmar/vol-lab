@@ -1,4 +1,4 @@
-"""SVI smile calibration under no-arbitrage constraints (ORCH-owned, W2).
+"""SVI smile calibration under no-arbitrage constraints.
 
 Raw SVI (Gatheral 2004) parameterizes total implied variance as a function of
 log-moneyness k = ln(K/F):

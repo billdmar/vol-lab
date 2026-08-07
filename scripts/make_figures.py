@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic showcase-figure generator for vol-lab (SA-viz, G3).
+"""Deterministic showcase-figure generator for vol-lab.
 
 Regenerates every showcase PNG under docs/figures/ from the committed snapshot
 fixtures and the calibrated surface / verification engines. Seeded and headless

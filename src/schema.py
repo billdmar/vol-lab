@@ -1,4 +1,4 @@
-"""Frozen data contracts for vol-lab (W0 — ORCH-owned, do not edit in subagents).
+"""Frozen data contracts for vol-lab (the shared schema; kept stable across the codebase).
 
 These dataclasses are the shared vocabulary between the Deribit data layer, the
 pricing engines, and the surface/calibration code. Every record carries enough

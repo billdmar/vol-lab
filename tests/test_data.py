@@ -1,4 +1,4 @@
-"""Tests for the Deribit data layer (SA-data owned: src/deribit/**).
+"""Tests for the Deribit data layer (src/deribit/**).
 
 Covers instrument-name parsing (golden hand-verified cases incl. ETH and edge
 strikes, malformed rejection), snapshot loading against the REAL committed fixture
