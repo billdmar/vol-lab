@@ -105,8 +105,8 @@ becomes a downside skew from ~11 Aug outward:
 | 3 days | +1.82 ± 1.61 |
 | ~3 days (10Aug) | −0.06 ± 0.57 |
 | 4 days (11Aug) | −1.46 ± 0.39 |
-| 1 month | −1.90 ± 0.10 |
-| 11 months | −1.48 ± 1.24 |
+| 3 weeks | −1.90 ± 0.10 |
+| 10.6 months | −1.48 ± 1.24 |
 
 ![25-delta risk reversal and butterfly](figures/04_rr_bf_25delta.png)
 
