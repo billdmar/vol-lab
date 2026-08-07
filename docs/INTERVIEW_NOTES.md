@@ -172,9 +172,10 @@ structural arbitrage. I flag every one; I never widen a tolerance to hide it.
 ## 11. What did the exchange differential teach you about your solver *and* mark-IV construction?
 
 `src/exchdiff/differential.py` compares my solved IV against Deribit's published mark IV on
-every matched strike. Median `|Δσ|` is **0.11–0.25 vol pts (BTC)** and **0.32–0.45 vol pts
-(ETH)** — close, and I always show the *distribution* (median, IQR, by-moneyness, outliers),
-never just claim "agreement." Two lessons the residual structure taught me:
+every matched strike. Median `|Δσ|` is **0.18 vol pts (BTC) / 0.39 (ETH)** (range 0.11–0.45
+across the two snapshots) — close, and I always show the *distribution* (median, IQR,
+by-moneyness, outliers), never just claim "agreement." Two lessons the residual structure
+taught me:
 - **Residuals peak at near-dated ATM** (ATM median `|Δσ|` ≈ 0.8–0.9 vol pts vs ~0.1 in the
   wings). ATM is where vega is largest, so a tiny mark-price rounding or a smoothing/timing
   difference in *how the exchange builds its mark* maps to a visible vol gap — this is about

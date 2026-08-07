@@ -160,9 +160,9 @@ expiry (short/medium/long). Descriptive only (`TOL["exch_diff_report_only"]`): w
 claim "agreement" without printing the distribution. Outliers are ranked with a diagnosed
 cause (`mark-fallback` > `wide-spread` > `deep-OTM wing` > `mark-IV construction`).
 
-**Result (fixture 2026-08-07).** Median `|Δσ|` = **0.11–0.45 vol points** overall
-(BTC tighter than ETH; snapshot-2 BTC 0.11). Residuals grow toward ATM/near-dated
-(BTC ATM ≈ 0.22–0.89 vp) exactly where mark-IV timing/smoothing bites hardest, and are
+**Result (fixture 2026-08-07).** Median `|Δσ|` = **0.18 (BTC) / 0.39 (ETH) vol points**
+(range 0.11–0.45 across the two snapshots; BTC tighter than ETH). Residuals grow toward
+ATM/near-dated (BTC ATM ≈ 0.22–0.89 vp) exactly where mark-IV timing/smoothing bites hardest, and are
 smallest in the liquid wings — the honest, expected pattern. Largest outliers are
 next-day ATM strikes (mark timing) and wide-spread far-wing calls (vega collapse). This
 is strong evidence our solver is correct *and* a descriptive read on how Deribit builds

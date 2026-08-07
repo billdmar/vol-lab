@@ -44,6 +44,24 @@ more days over time). Reproduce every number: `python scripts/report_surface.py 
 ![Exchange differential — our IV vs Deribit mark IV](docs/figures/06_exchange_differential.png)
 ![CRR → Black-Scholes convergence](docs/figures/05_crr_convergence.png)
 
+## How it works
+
+```mermaid
+flowchart LR
+    A[Deribit public API<br/>BTC + ETH board] --> B[parse + inverse-contract<br/>coin premium x index to USD]
+    B --> C[forward per expiry<br/>from put-call parity]
+    C --> D[implied vol per strike<br/>bracket+Newton solver]
+    D --> E[SVI calibration<br/>no-arbitrage constrained]
+    E --> F[no-arb scan<br/>butterfly + calendar]
+    E --> G[exchange differential<br/>our IV vs Deribit mark IV]
+    H[BS / CRR / MC / LSMC<br/>engines, cross-verified] -.priced against.-> D
+```
+
+Snapshot → USD conversion → parity forward → IV solve → SVI surface → no-arb scan +
+exchange differential. The four pricing engines are cross-verified against each other and
+feed the IV solver; every stage's conventions and tolerances are in
+[`docs/DESIGN.md`](docs/DESIGN.md) and [`config/tolerances.py`](config/tolerances.py).
+
 ## Verification (the point of the project)
 
 1. **Cross-engine differential** — CRR European price converges to Black-Scholes with a
