@@ -1,0 +1,174 @@
+"""Surface construction tests (ORCH-owned, W2): forwards, smiles, SVI.
+
+Two layers of verification:
+  * Synthetic exact-recovery: build option prices from a KNOWN forward and a KNOWN SVI
+    slice, then confirm we recover the forward (parity regression) and the SVI shape (fit).
+    This is the "pricing has right answers" discipline applied to the surface.
+  * Real-data sanity: run the full pipeline on the committed Deribit fixture and assert the
+    structural properties (forwards match Deribit's own forward, RMSE reported, RR/BF finite).
+"""
+
+from __future__ import annotations
+
+import glob
+import math
+
+import numpy as np
+import pytest
+
+from src.bs import BS
+from src.deribit.store import load_snapshot
+from src.schema import OptionQuote
+from src.surface.forwards import infer_forward, year_fraction
+from src.surface.smiles import build_smile
+from src.surface.surface import build_surface
+from src.surface.svi import SVIParams, calibrate_svi, svi_iv, svi_total_variance
+
+FIXTURE = sorted(glob.glob("data/snapshots/snapshot_*.json"))[-1]
+
+
+# ------------------------------------------------------- synthetic exact recovery
+
+
+def _synthetic_quotes(forward, tau, rate, sigma, strikes, underlying="BTC",
+                      index=60000.0, snapshot_ts=1_749_000_000.0, expiry_ts=1_750_000_000.0):
+    """Build call+put OptionQuotes priced at a flat BS sigma on a known forward.
+
+    Premiums are stored back in coin units (USD price / index) so the parity regression
+    and IV solver see a self-consistent inverse-contract quote.
+    """
+    spot = forward * math.exp(-rate * tau)
+    quotes = []
+    for k in strikes:
+        for ot in ("C", "P"):
+            usd = BS.price(spot=spot, strike=k, tau=tau, rate=rate, sigma=sigma,
+                           option_type=ot, carry=0.0).price
+            coin = usd / index
+            quotes.append(OptionQuote(
+                instrument_name=f"{underlying}-X-{int(k)}-{ot}",
+                underlying=underlying, option_type=ot, strike=float(k),
+                expiry_ts=expiry_ts, bid_coin=coin * 0.999, ask_coin=coin * 1.001,
+                mark_price_coin=coin, mark_price_usd=usd, mark_iv=sigma,
+                open_interest=100.0, index_price=index, underlying_price=forward,
+                snapshot_ts=snapshot_ts,
+            ))
+    return quotes
+
+
+def test_forward_exact_recovery_from_parity():
+    """A flat-vol synthetic book recovers its known forward to high precision."""
+    F, tau, rate, sigma = 61234.0, 0.25, 0.0, 0.6
+    strikes = np.linspace(50000, 75000, 15)
+    ref_ts = 1_750_000_000.0 - tau * 365 * 86400
+    quotes = _synthetic_quotes(F, tau, rate, sigma, strikes, snapshot_ts=ref_ts)
+    fit = infer_forward(quotes, ref_ts=ref_ts)
+    assert fit is not None
+    assert fit.forward == pytest.approx(F, rel=1e-6)
+    assert fit.discount_factor == pytest.approx(1.0, abs=1e-6)  # rate 0 -> df 1
+    assert fit.n_pairs == len(strikes)
+    assert fit.resid_rms < 1e-3
+
+
+def test_forward_recovery_with_nonzero_rate():
+    F, tau, rate, sigma = 61000.0, 0.5, 0.05, 0.5
+    strikes = np.linspace(50000, 72000, 12)
+    ref_ts = 1_750_000_000.0 - tau * 365 * 86400
+    quotes = _synthetic_quotes(F, tau, rate, sigma, strikes, snapshot_ts=ref_ts)
+    fit = infer_forward(quotes, ref_ts=ref_ts)
+    assert fit is not None
+    assert fit.forward == pytest.approx(F, rel=1e-5)
+    assert fit.discount_factor == pytest.approx(math.exp(-rate * tau), abs=1e-5)
+    assert fit.rate == pytest.approx(rate, abs=1e-4)
+
+
+def test_forward_none_when_too_few_pairs():
+    F, tau, sigma = 60000.0, 0.25, 0.6
+    ref_ts = 1_750_000_000.0 - tau * 365 * 86400
+    quotes = _synthetic_quotes(F, tau, 0.0, sigma, [60000.0], snapshot_ts=ref_ts)
+    assert infer_forward(quotes, ref_ts=ref_ts, min_pairs=3) is None
+
+
+def test_smile_flat_vol_recovers_sigma():
+    """A flat-vol book yields a flat smile at the known sigma (IV solver round-trip)."""
+    F, tau, sigma = 60000.0, 0.25, 0.55
+    strikes = np.linspace(48000, 74000, 15)
+    ref_ts = 1_750_000_000.0 - tau * 365 * 86400
+    quotes = _synthetic_quotes(F, tau, 0.0, sigma, strikes, snapshot_ts=ref_ts)
+    fit = infer_forward(quotes, ref_ts=ref_ts)
+    smile = build_smile(quotes, fit)
+    assert len(smile.points) >= 8
+    assert smile.ivs == pytest.approx(np.full(len(smile.points), sigma), abs=1e-4)
+    # OTM selection: calls above F, puts below F.
+    for p in smile.points:
+        if p.option_type == "C":
+            assert p.strike >= F
+        else:
+            assert p.strike < F
+
+
+def test_svi_recovers_known_slice():
+    """Prices generated from a known SVI slice re-calibrate to (near) the same params."""
+    true = SVIParams(a=0.04, b=0.2, rho=-0.3, m=0.0, sigma=0.15)
+    tau = 0.5
+    k = np.linspace(-0.6, 0.6, 21)
+    w = svi_total_variance(k, true)
+    fit = calibrate_svi(k, w, tau)
+    # Recovered variance curve matches the true one very tightly (params can trade off,
+    # so we assert on the CURVE, which is what actually matters for the surface).
+    w_fit = svi_total_variance(k, fit.params)
+    assert np.allclose(w_fit, w, atol=1e-4)
+    assert fit.rmse_w < 1e-3
+    assert fit.converged
+
+
+def test_svi_needs_enough_points():
+    with pytest.raises(ValueError, match=">= 5 points"):
+        calibrate_svi([0.0, 0.1, 0.2], [0.04, 0.041, 0.045], 0.5)
+
+
+def test_svi_iv_nonnegative():
+    params = SVIParams(a=0.04, b=0.2, rho=-0.3, m=0.0, sigma=0.15)
+    ivs = svi_iv(np.linspace(-1, 1, 11), params, 0.5)
+    assert np.all(ivs >= 0.0)
+
+
+def test_year_fraction_act365():
+    assert year_fraction(1000.0 + 365 * 86400, 1000.0) == pytest.approx(1.0)
+    assert year_fraction(500.0, 1000.0) == 0.0  # past expiry clamps to 0
+
+
+# ----------------------------------------------------------- real-data pipeline
+
+
+def test_build_surface_real_fixture_btc_and_eth():
+    """Full pipeline on the committed Deribit fixture: structural sanity + external check."""
+    snap = load_snapshot(FIXTURE)
+    for ccy in ("BTC", "ETH"):
+        quotes = snap.for_underlying(ccy)
+        surf = build_surface(quotes, ref_ts=snap.collected_ts)
+        assert len(surf.slices) >= 8, f"{ccy} too few calibrated slices"
+        for s in surf.slices:
+            # Parity forward matches Deribit's own forward to < 1% (external validation).
+            if s.fit.deribit_forward is not None:
+                rel = abs(s.forward - s.fit.deribit_forward) / s.fit.deribit_forward
+                assert rel < 0.01, f"{ccy} {s.expiry_ts}: forward off by {rel:.3%}"
+            # ATM vol is a sane crypto level.
+            assert 0.05 < s.atm_vol < 3.0
+            # SVI fit produced a finite RMSE and the slice is calibrated.
+            assert math.isfinite(s.svi.rmse_w)
+            assert s.svi.n_points >= 5
+        # Term structure is monotone-ish (sorted by tau, all finite).
+        ts = surf.term_structure
+        assert all(math.isfinite(v) for _, v in ts)
+
+
+def test_surface_term_structure_and_rr_finite():
+    snap = load_snapshot(FIXTURE)
+    surf = build_surface(snap.for_underlying("BTC"), ref_ts=snap.collected_ts)
+    # At least most slices produce a finite 25-delta RR/BF.
+    n_rr = sum(1 for s in surf.slices if s.rr_25 is not None)
+    assert n_rr >= len(surf.slices) - 2
+    for s in surf.slices:
+        if s.rr_25 is not None:
+            assert abs(s.rr_25) < 0.5   # RR within 50 vol points (sane)
+            assert s.bf_25 is not None
