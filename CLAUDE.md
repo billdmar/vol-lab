@@ -89,7 +89,7 @@ continue the mission without being asked.
 - Never let a subagent edit outside its owned paths or alter frozen contracts.
 
 ## Tracker (tick when the gate's DoD fully passes)
-- [ ] W0 bootstrap + scaffold + CI + contracts frozen + snapshot collection
+- [x] W0 bootstrap + scaffold + CI + contracts frozen + snapshot collection
       started + private kit repo (billdmar/vol-lab-kit) created and pushed
 - [ ] G1 engines merged and cross-verified: BS, binomial, MC, Greeks,
       property suites — convergence orders measured
