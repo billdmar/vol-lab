@@ -1,0 +1,91 @@
+[project]
+name = "vol-lab"
+version = "1.3.1"
+description = "Options pricing and implied-volatility surface engine on real Deribit crypto-options data, cross-verified against the exchange."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "William Mar" }]
+
+# Pinned to the exact versions resolved in the project venv (Python 3.12.13, arm64).
+# CI (ubuntu-latest) installs these same pins; see .github/workflows/ci.yml.
+# Runtime is intentionally lean: NumPy/SciPy for the numerics, matplotlib for figures,
+# and the standard library for the Deribit client (urllib — no `requests`/`pandas`).
+dependencies = [
+  "numpy==2.5.1",
+  "scipy==1.18.0",
+  "matplotlib==3.11.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "hypothesis==6.165.2",
+  "pytest==9.1.1",
+  "coverage==7.15.4",
+  "ruff==0.16.1",
+  "mypy==2.3.0",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# `src` is the import root (src-layout via `pythonpath=["."]`), so the packages are
+# addressed as `src.*` / `config`. Editable install: `pip install -e ".[dev]"`.
+packages = [
+  "config",
+  "src",
+  "src.bs",
+  "src.deribit",
+  "src.exchdiff",
+  "src.lattice",
+  "src.lsmc",
+  "src.mc",
+  "src.noarb",
+  "src.surface",
+  "src.viz",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "data"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, comprehensions, pyupgrade, numpy-specific
+select = ["E", "F", "I", "B", "C4", "UP", "NPY"]
+ignore = [
+  "E741",  # ambiguous variable names (d1/d2, k, K are domain-standard in options math)
+]
+
+[tool.mypy]
+# Non-strict but meaningful: every function in src/ must be fully annotated, and the
+# numpy-heavy modules are checked for real type errors. Third-party stubs (scipy, etc.)
+# are not all shipped, so missing imports are ignored rather than silenced per-line.
+python_version = "3.12"
+files = ["src"]
+ignore_missing_imports = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[tool.pytest.ini_options]
+# src-layout: import engines as `from src.bs import ...`
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error::DeprecationWarning"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+# The >=90% gate is on the *engines* (pricing, data, surface, verification). src/viz is
+# presentation code (matplotlib figure generation) verified by visual inspection + content
+# determinism (scripts/make_figures.py), not unit tests — so it is excluded from the
+# engine-coverage measurement rather than padded with brittle image assertions.
+omit = ["src/**/__init__.py", "src/viz/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
